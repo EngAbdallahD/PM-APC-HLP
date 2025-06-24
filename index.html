@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APC Preventive Maintenance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .bg-image {
+            background-image: url('Background.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="app" class="h-screen w-screen">
+
+        <!-- Login Screen -->
+        <div id="login-screen" class="flex flex-col items-center justify-center h-full w-full bg-image">
+            <div class="bg-white bg-opacity-90 p-8 rounded-2xl shadow-2xl text-center w-full max-w-md">
+                <img src="arab_potash_logo.png" alt="Logo" class="mx-auto mb-6 h-24">
+                <h1 class="text-3xl font-bold text-gray-800 mb-6">PM Application</h1>
+                <div id="user-selection">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Select User</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="login('User1')" class="bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105">User 1</button>
+                        <button onclick="login('User2')" class="bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105">User 2</button>
+                        <button onclick="login('User3')" class="bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 transition-transform transform hover:scale-105">User 3</button>
+                        <button onclick="login('User4')" class="bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 transition-transform transform hover:scale-105">User 4</button>
+                    </div>
+                    <button onclick="showAdminLogin()" class="mt-6 text-gray-600 hover:text-blue-600 font-medium">Login as Admin</button>
+                </div>
+                <div id="admin-login" class="hidden">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Admin Login</h2>
+                    <input type="password" id="admin-password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4">
+                    <button onclick="loginAdmin()" class="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-red-700 transition">Login</button>
+                    <button onclick="showUserSelection()" class="mt-4 text-gray-600 hover:text-blue-600 font-medium">Back to User Selection</button>
+                </div>
+            </div>
+             <p class="text-white text-center mt-4 text-sm font-light absolute bottom-4">Design by: Eng.Abdallah Dmour</p>
+        </div>
+
+        <!-- Main App - User -->
+        <div id="user-interface" class="hidden h-full flex flex-col">
+            <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                <div class="flex items-center">
+                    <img src="arab_potash_logo.png" alt="Logo" class="h-12 mr-4">
+                    <h1 class="text-2xl font-bold text-gray-800">User Dashboard</h1>
+                </div>
+                <div>
+                    <span id="current-user" class="font-semibold text-lg text-gray-700 mr-4"></span>
+                    <button onclick="logout()" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition">Logout</button>
+                </div>
+            </header>
+            <main class="flex-grow p-6 overflow-y-auto bg-gray-50">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Start New PM Task</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button onclick="selectZone('HLP')" class="bg-yellow-500 text-white font-bold py-8 rounded-lg shadow-lg hover:bg-yellow-600 transition-transform transform hover:scale-105 text-2xl">HLP</button>
+                        <button onclick="selectZone('SCREEN')" class="bg-teal-500 text-white font-bold py-8 rounded-lg shadow-lg hover:bg-teal-600 transition-transform transform hover:scale-105 text-2xl">SCREEN</button>
+                        <button onclick="selectZone('COMPACTION')" class="bg-indigo-500 text-white font-bold py-8 rounded-lg shadow-lg hover:bg-indigo-600 transition-transform transform hover:scale-105 text-2xl">COMPACTION</button>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Recent PM Activities</h2>
+                    <div id="recent-activities" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Recent activities will be dynamically inserted here -->
+                    </div>
+                </div>
+            </main>
+             <footer class="bg-gray-200 text-center p-4">
+                <p class="text-sm text-gray-600">Design by: Eng.Abdallah Dmour</p>
+            </footer>
+        </div>
+
+        <!-- Main App - Admin -->
+        <div id="admin-interface" class="hidden h-full flex flex-col">
+             <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                <div class="flex items-center">
+                    <img src="arab_potash_logo.png" alt="Logo" class="h-12 mr-4">
+                    <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+                </div>
+                <div>
+                    <span class="font-semibold text-lg text-red-700 mr-4">ADMIN</span>
+                    <button onclick="logout()" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition">Logout</button>
+                </div>
+            </header>
+            <main class="flex-grow p-6 bg-gray-50 overflow-y-auto">
+                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Live Activities -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Live PM Activities</h2>
+                        <div id="admin-live-activities" class="space-y-4 h-96 overflow-y-auto">
+                           <!-- Live activities for admin -->
+                        </div>
+                    </div>
+                    <!-- History and Reports -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">PM History & Reports</h2>
+                         <div class="flex items-center space-x-4 mb-4">
+                            <label for="reset-interval" class="font-semibold">Data Reset Interval:</label>
+                            <select id="reset-interval" class="p-2 border rounded-lg">
+                                <option value="3600000">One Hour</option>
+                                <option value="86400000">Daily</option>
+                                <option value="604800000" selected>Weekly</option>
+                                <option value="2592000000">Monthly</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-4 mb-4">
+                             <button onclick="exportToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export to Excel</button>
+                            <button onclick="exportToPDF()" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Export to PDF</button>
+                        </div>
+                        <div id="admin-history" class="h-80 overflow-y-auto border rounded-lg p-2">
+                           <!-- history table for admin -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+             <footer class="bg-gray-200 text-center p-4">
+                <p class="text-sm text-gray-600">Design by: Eng.Abdallah Dmour</p>
+            </footer>
+        </div>
+
+        <!-- Equipment Selection Modal -->
+        <div id="equipment-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl">
+                <h2 class="text-2xl font-bold mb-4" id="equipment-modal-title">Select Equipment</h2>
+                <div class="mb-4">
+                    <input type="text" id="tag-search" class="w-full p-3 border rounded-lg" placeholder="Search by TAG number...">
+                </div>
+                <div class="h-64 overflow-y-auto border rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TAG Number</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipment Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="equipment-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Equipment data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button onclick="closeEquipmentModal()" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PM Task Modal -->
+        <div id="pm-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg">
+                <h2 class="text-2xl font-bold mb-2">PM Task for <span id="pm-tag-number" class="text-blue-600"></span></h2>
+                <p class="text-lg text-gray-600 mb-6" id="pm-equipment-description"></p>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <label class="font-semibold text-lg">Sound</label>
+                        <div>
+                            <input type="radio" name="sound" id="sound-ok" value="OK" class="form-radio h-5 w-5 text-green-600"><span class="ml-2 mr-4">OK</span>
+                            <input type="radio" name="sound" id="sound-error" value="Error" class="form-radio h-5 w-5 text-red-600"><span class="ml-2">Error</span>
+                        </div>
+                    </div>
+                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <label class="font-semibold text-lg">Vibration</label>
+                        <div>
+                           <input type="radio" name="vibration" id="vibration-ok" value="OK" class="form-radio h-5 w-5 text-green-600"><span class="ml-2 mr-4">OK</span>
+                           <input type="radio" name="vibration" id="vibration-error" value="Error" class="form-radio h-5 w-5 text-red-600"><span class="ml-2">Error</span>
+                        </div>
+                    </div>
+                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <label class="font-semibold text-lg">Heat</label>
+                        <div>
+                           <input type="radio" name="heat" id="heat-ok" value="OK" class="form-radio h-5 w-5 text-green-600"><span class="ml-2 mr-4">OK</span>
+                           <input type="radio" name="heat" id="heat-error" value="Error" class="form-radio h-5 w-5 text-red-600"><span class="ml-2">Error</span>
+                        </div>
+                    </div>
+                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <label class="font-semibold text-lg">Motor Umbrella</label>
+                        <div>
+                           <input type="radio" name="motor_umbrella" id="motor_umbrella-ok" value="OK" class="form-radio h-5 w-5 text-green-600"><span class="ml-2 mr-4">OK</span>
+                           <input type="radio" name="motor_umbrella" id="motor_umbrella-error" value="Error" class="form-radio h-5 w-5 text-red-600"><span class="ml-2">Error</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <label class="font-semibold text-lg">Status</label>
+                        <div>
+                           <input type="radio" name="status" id="status-ok" value="OK" class="form-radio h-5 w-5 text-green-600"><span class="ml-2 mr-4">OK</span>
+                           <input type="radio" name="status" id="status-error" value="Error" class="form-radio h-5 w-5 text-red-600"><span class="ml-2">Error</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="note" class="font-semibold text-lg">Note</label>
+                        <textarea id="note" class="w-full mt-2 p-3 border rounded-lg h-24" placeholder="Add extra information here..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button onclick="closePmModal()" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition">Cancel</button>
+                    <button onclick="submitPmTask()" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">PM Finished</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Custom Alert Modal -->
+        <div id="alert-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+                <h2 id="alert-title" class="text-xl font-bold mb-4">Alert</h2>
+                <p id="alert-message" class="text-gray-700 mb-6"></p>
+                <button onclick="closeAlertModal()" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAy8Bymqb-VdO76OKv-MIynnGtho14X9yc",
+            authDomain: "pm-apc-web.firebaseapp.com",
+            projectId: "pm-apc-web",
+            storageBucket: "pm-apc-web.firebasestorage.app",
+            messagingSenderId: "420385829693",
+            appId: "1:420385829693:web:966de336767aa6b0950b54",
+            measurementId: "G-2YEVWNLGHP"
+        };
+
+        // --- INITIALIZE FIREBASE ---
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- GLOBAL STATE ---
+        let currentUser = null;
+        let currentZone = null;
+        let selectedEquipment = null;
+        let equipmentData = { HLP: [], SCREEN: [], COMPACTION: [] };
+        let allTasks = [];
+        let unsubscribe = null;
+
+
+        // --- EMBEDDED CSV DATA ---
+        const hlpCsvData = `TAG number,Equipment Description
+13-01-015,1ST STAGE DECOMPOSTION THICKNER DISCHARGE PUMP #15
+13-01-016,1ST STAGE DECOMPOSTION THICKNER DISCHARGE PUMP #16
+13-01-017 (VFD),CARNALITE RE-PULP TANK PUMP #17
+13-01-018 (VFD),CARNALITE RE-PULP TANK PUMP #18
+13-01-031 (VFD),WASH THECKENER U/F #31 (VFD)
+13-01-032,WASH THICKNER U/F PUMP #32
+13-01-033 (VFD),CARNALITE THICKNER U/F PUMP #33 (VFD)
+13-01-034,CARNALITE THICKNER U/F PUMP #34
+13-01-035,1ST STAGE DECOMPOSTION THICKNER U/F PUMP #35
+13-01-036,1ST STAGE DECOMPOSTION THICKNER U/F PUMP #36
+13-01-037 (VFD),WASH THECKENER U/F #37 (VFD)
+13-01-038 (VFD),CARNALITE THICKNER U/F PUMP #38 (VFD)
+13-01-039,1ST STAGE DECOMPOSTION THICKNER U/F PUMP #39 
+13-01-044,1ST STAGE DECOMPOSTION THICKNER O/F PUMP #44
+13-01-045,1ST STAGE DECOMPOSTION THICKNER O/F PUMP #45
+13-01-046,WASH THICKNER O/F PUMP #46
+13-01-047,WASH THICKNER O/F PUMP #47
+13-01-051,SYLVNITE THICKNER U/F PUMP #51 
+13-01-052,SYLVNITE THICKNER U/F PUMP #52 
+13-01-061,SYLVNITE THICKNER O/F PUMP #61 
+13-01-062,SYLVNITE THICKNER O/F PUMP #62 
+13-01-071,SYLVANITE FILTER FEED PUMP #71
+13-01-072,SYLVANITE FILTER FEED PUMP #72
+13-01-073 (VFD),SYLVANITE FILTER FEED PUMP #73 (VFD)
+13-01-074 (VFD),SYLVANITE FILTER FEED PUMP #74 (VFD)
+13-01-075,VIBRATING SCREEN FEED PUMP #75 
+13-01-076,VIBRATING SCREEN FEED PUMP #76 
+13-01-077 (VFD),VIBRATING SCREEN OVERSIZE PUMP #77 (VFD)
+13-01-078 (VFD),VIBRATING SCREEN OVERSIZE PUMP #78 (VFD)
+13-01-082 (VFD),WASH THICKENER REPULP PUMP #82
+13-01-083 (VFD),WASH THICKENER REPULP PUMP #83
+13-01-084,FLUSHING WATER PUMP AT DEWATRING CENTRIFUGE AREA
+13-01-093 (VFD),SYLVANITE 2 ND FILTRATE PUMP #93 (VFD)
+13-01-094 (VFD),SYLVANITE 2 ND FILTRATE PUMP #94 (VFD)
+13-01-103,SUMP PUMP #103
+13-01-104,SUMP PUMP #104
+13-01-105,SUMP PUMP #105
+13-01-106,SUMP PUMP #106
+13-01-111 (VFD),CARNALLITE SURGE TANK PUMP #111
+13-01-112 (VFD),CARNALLITE SURGE TANK PUMP #112
+13-01-113 (VFD),CARNALLITE SURGE TANK PUMP #113
+13-01-114 (VFD),CARNALLITE SURGE TANK PUMP #114
+13-01-115,STONE REMOVAL REPULP TANK PUMP #115
+13-01-116,STONE REMOVAL REPULP TANK PUMP #116
+13-01-117,STONE REMOVAL REPULP TANK PUMP #117
+13-01-141 (VFD),BUFFER TANK PUMP MOTOR #141
+13-01-142 (VFD),BUFFER TANK PUMP MOTOR #142
+13-01-143 (VFD),THICKENER PUMP MOTOR #143
+13-01-144 (VFD),THICKENER PUMP MOTOR #144
+13-01-145 (VFD),HOTWELL#2 PUMP MOTOR #145
+13-01-146 (VFD),HOTWELL#2 PUMP MOTOR #146
+13-01-147 (VFD),HOTWELL#2 PUMP MOTOR #147
+13-01-151 (VFD),HOT BRINE PUMP #151 (VFD)
+13-01-152 (VFD),HOT BRINE PUMP #152 (VFD)
+13-01-161,TAIL DESPOSAL PUMP #161
+13-01-162,TAIL DESPOSAL PUMP #162
+13-01-171,BRINE HEATER CONDENSATE PUMP #171
+13-01-172,BRINE HEATER CONDENSATE PUMP #172
+13-01-181,NO.1 BAROMETRIC CONDENCER PUMP #181
+13-01-182,NO.1 BAROMETRIC CONDENCER PUMP #182
+13-01-183,GLAND PACKING COOLING PUMP #183
+13-01-184,GLAND PACKING COOLING PUMP #184
+13-01-210,1ST STAGE CRYST.TRANSFEER PUMP #210
+13-01-220,1ST STAGE CRYST.O/F TRANSFEER PUMP #220
+13-01-230 (VFD),NO.2 BAROMETRIC CONDENCER PUMP #230 (VFD)
+13-01-250,2ND STAGE CRYST.TRANSFEER PUMP # 250
+13-01-260,2SD STAGE CRYST.O/F TRANSFEER PUMP #260
+13-01-270 (VFD),NO.3 BAROMETRIC CONDENCER PUMP #270 (VFD)
+13-01-271 (VFD),NO.6 BAROMETRIC CONDENCER PUMP #271 (VFD)
+13-01-290 (VFD),3 RD STAGE CRYST.TRANSFEER PUMP #290 (VFD)
+13-01-291 (VFD),6 TH STAGE CRYST.TRANSFEER PUMP #291 (VFD)
+13-01-300,3 RD STAGE CRYST.O/F TRANSFEER PUMP #300
+13-01-301,6 TH STAGE CRYST.O/F TRANSFEER PUMP #301
+13-01-310 (VFD),4 TH STAGE CRYST.TRANSFEER PUMP #310 (VFD)
+13-01-320,4 TH STAGE CRYST.O/F TRANSFEER PUMP #320
+13-01-331,5 TH STAGE CRYST.TRANSFEER PUMP #331
+13-01-332,6 TH STAGE CRYST.TRANSFEER PUMP #332
+13-01-341 (VFD),5 TH STAGE CRYST. TRANSFER PUMP #341 (VFD)
+13-01-342 (VFD),6 TH STAGE CRYST. TRANSFER PUMP #342 (VFD)
+13-01-351,NO.5 BAROMETRIC CONDENCER PUMP #351
+13-01-352,NO.5 BAROMETRIC CONDENCER PUMP #352
+13-01-361,CRYSTALLIZER WATER ADDITION PUMP #361
+13-01-362,CRYSTALLIZER WATER ADDITION PUMP #362
+13-01-363,HOT THICKENER WATER ADDITION PUMP #363
+13-01-370,CRYSTALLIZER WASH TANK PUMP #370
+13-01-371,CRYSTALLIZER WASH TANK PUMP #371
+13-01-403,NEW PRODUCT CENTRIFUGE CENTRATE PUMP #403
+13-01-404,NEW PRODUCT CENTRIFUGE CENTRATE PUMP #404
+13-01-405 (VFD),MOTHER LIQUOR THICKENER OVERFLOW PUMP #01 MOTOR (VFD)
+13-01-406 (VFD),MOTHER LIQUOR THICKENER OVERFLOW PUMP #02 MOTOR (VFD)
+13-01-407,MOTHER LIQUOR THICKENER GSW BOOSTER PUMP #01 MOTOR
+13-01-408,MOTHER LIQUOR THICKENER GSW BOOSTER PUMP #02 MOTOR
+13-01-409 (VFD),MOTHER LIQUOR THICKENER UNDERFLOW PUMP #01 MOTOR (VFD)
+13-01-410 (VFD),MOTHER LIQUOR THICKENER UNDERFLOW PUMP #02 MOTOR (VFD)
+13-01-432,#12 CENTRIFUGE LUBE OIL MOTOR
+13-01-433,#13 CENTRIFUGE LUBE OIL MOTOR
+13-01-434,#14 CENTRIFUGE LUBE OIL MOTOR
+13-01-435,#15 CENTRIFUGE LUBE OIL MOTOR
+13-01-436,#16 CENTRIFUGE LUBE OIL MOTOR
+13-01-442,#22 CENTRIFUGE LUBE OIL MOTOR
+13-01-443,#23 CENTRIFUGE LUBE OIL MOTOR
+13-01-444,#24 CENTRIFUGE LUBE OIL MOTOR
+13-01-445,#25 CENTRIFUGE LUBE OIL MOTOR
+13-01-446,#26 CENTRIFUGE LUBE OIL MOTOR
+13-01-447,#27 CENTRIFUGE LUBE OIL MOTOR
+13-01-451,#31 CENTRIFUGE LUBE OIL MOTOR
+13-01-452,#32 CENTRIFUGE LUBE OIL MOTOR
+13-01-453,#33 CENTRIFUGE LUBE OIL MOTOR
+13-01-454,#34 CENTRIFUGE LUBE OIL MOTOR
+13-01-462,#42 CENTRIFUGE LUBE OIL MOTOR
+13-01-463,#43 CENTRIFUGE LUBE OIL MOTOR
+13-01-464,#44 CENTRIFUGE LUBE OIL MOTOR
+13-01-471,#51 CENTRIFUGE LUBE OIL MOTOR
+13-01-472,#52 CENTRIFUGE LUBE OIL MOTOR
+13-01-473,#53 CENTRIFUGE LUBE OIL MOTOR
+13-01-474,#54 CENTRIFUGE LUBE OIL MOTOR
+13-01-475,#55 CENTRIFUGE LUBE OIL MOTOR
+13-01-541,TAILS CYCLONE FEED PUMP #541 
+13-01-542,TAILS CYCLONE FEED PUMP #542
+13-01-555,PACKING PUMP FOR NEW CARNALITE O/F PUMPS #01
+13-01-556,PACKING PUMP FOR NEW CARNALITE O/F PUMPS #02
+13-01-557,PACKING PUMP FOR NEW HOT-WELL PUMP #01
+13-01-558,PACKING PUMP FOR NEW HOT-WELL PUMP #02
+13-01-559,PACKING PUMP #590
+13-01-560,PACKING PUMP #560
+13-01-561 (VFD),HOT THEKENER UNDER FLOW #561 (VFD)
+13-01-562 (VFD),HOT THEKENER UNDER FLOW #562 (VFD)
+13-01-571 (VFD),NEW HOT THICKENER O/F PUMP #571 (VFD)
+13-01-572 (VFD),NEW HOT THICKENER O/F PUMP #572 (VFD)
+13-01-573,NEW HOT BRINE THICKNER SUMP PUMP # 573
+13-01-574,NEW HOT BRINE THICKNER SUMP PUMP #574
+13-01-610,FLUSHING PUMP FOR PRODUCT CENTRIFUGE
+13-01-611,FLUSHING PUMP FOR CARNALITE CENTRIFUGE
+13-02-011,VACUUM PUMP #11 
+13-02-012,VACUUM PUMP #12 
+13-02-013,VACUUM PUMP #13 (ROOTS BLOWER PUMP)
+13-02-014,VACUUM PUMP #14 (ROOTS BLOWER PUMP)
+13-03-011,SYLVANITE BELT FILTER #11 BLOWER MOTOR 
+13-03-012,SYLVANITE BELT FILTER #12 BLOWER MOTOR 
+13-03-013,SYLVANITE BELT FILTER #13 BLOWER MOTOR 
+13-03-015,ROOT COOLING FAN #15 FOR VACUUM PUMP #14 (ROOTS BLOWER PUMP)
+13-03-016,ROOT COOLING FAN #16 FOR VACUUM PUMP #14 (ROOTS BLOWER PUMP)
+13-03-017,ROOT COOLING FAN #17 FOR VACUUM PUMP #13 (ROOTS BLOWER PUMP)
+13-03-018,ROOT COOLING FAN #18 FOR VACUUM PUMP #13 (ROOTS BLOWER PUMP)
+13-03-141,RADIATOR COOLING FAN MOTOR #141
+13-03-142,RADIATOR COOLING FAN MOTOR #142
+13-03-143,RADIATOR COOLING FAN MOTOR #143
+13-03-144,RADIATOR COOLING FAN MOTOR #144
+13-03-145,RADIATOR COOLING FAN MOTOR #145
+13-03-146,RADIATOR COOLING FAN MOTOR #146
+13-03-147,RADIATOR COOLING FAN MOTOR #147
+13-03-432,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #12
+13-03-433,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #13
+13-03-434,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #14
+13-03-435,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #15
+13-03-436,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #16
+13-03-442,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #22
+13-03-443,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #23
+13-03-444,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #24
+13-03-445,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #25
+13-03-446,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #26
+13-03-447,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #27
+13-03-451,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #31
+13-03-452,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #32
+13-03-453,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #33
+13-03-454,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #34
+13-03-462,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #42
+13-03-463,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #43
+13-03-464,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #44
+13-03-471,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #51
+13-03-472,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #52
+13-03-473,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #53
+13-03-474,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #54
+13-03-475,RADIATOR LUBE OIL COOLING FAN / CENTRIFUGE #55
+13-04-010-01,"CARN. WASH THICKENER RAKE MOTOR ""NORTH"" PUMP #01"
+13-04-010-02,"CARN. WASH THICKENER RAKE MOTOR ""SOUTH"" PUMP#02"
+13-04-010-03,"CARN. WASH THICKENER RAKE MOTOR ""LIFTTING"" PUMP#01"
+13-04-010-04,"CARN. WASH THICKENER RAKE MOTOR ""LIFTTING"" PUMP#02"
+13-04-010-05,CARN. WASH THICKENER RAKE OIL TANK COOLANT FAN
+13-04-010-CONTROL PANEL,CARN. WASH THICKENER RAKE LOCAL CONTROL PANEL 230V
+13-04-010-HEATER PANEL,CARN. WASH THICKENER RAKE LOCAL HEATER PANEL 400V
+13-04-011-01,CAR. THICKENER HYD.DRIVE PUMP #01 MOTOR
+13-04-011-02,CAR. THICKENER HYD.DRIVE PUMP #02 MOTOR
+13-04-011-03 (A),"CARN. THICKENER RAKE ""HYD LIFTTING PUMP A"""
+13-04-011-03 (B),"CARN. THICKENER RAKE ""HYD LIFTTING PUMP B"""
+13-04-011-LOCAL PANEL,CARNLITE THICKENER 230V LOCAL CONTROL PANEL
+13-04-012-01,"1ST STAGE THICKENER RAKE "" NORTH"""
+13-04-012-02,"1ST STAGE THICKENER RAKE "" SOUTH"""
+13-04-012-03,"1ST STAGE THICKENER RAKE "" LIFTTING"""
+13-04-020-01,"SULV. THICKENER RAKE MOTOR ""NORTH"""
+13-04-020-02,"SULV. THICKENER RAKE MOTOR ""SOUTH"""
+13-04-020-03,"SULV. THICKENER RAKE MOTOR ""LIFTTING"""
+13-04-031-01,NEW HOT BRINE THICKNER RAKE MOTOR #01
+13-04-031-02,NEW HOT BRINE THICKNER RAKE MOTOR #02
+13-04-031-03,NEW HOT BRINE THICKNER RAKE LIFTTING MOTOR #03
+13-04-031-04,NEW HOT BRINE THICKNER RAKE LIFTTING MOTOR #04
+13-04-031-05,NEW HOT BRINE THICKNER OIL COOLING FAN MOTOR #01
+13-04-031-06,NEW HOT BRINE THICKNER OIL COOLING FAN MOTOR #02
+13-04-031-LOCAL PANEL,NEW HOT BRINE THICKNER  LOCAL PANEL FEEDER
+13-04-051-01,MOTHER LIQUOR THICKENER DRIVE RAKE PUMP #01 MOTOR
+13-04-051-02,MOTHER LIQUOR THICKENER DRIVE RAKE PUMP #02 MOTOR
+13-04-051-03,MOTHER LIQUOR THICKENER RAKE LIFT MOTOR
+13-04-051-04,MOTHER LIQUOR THICKENER OIL COOLING FAN MOTOR #01
+13-04-051-05,MOTHER LIQUOR THICKENER OIL COOLING FAN MOTOR #02
+13-04-051-06,MOTHER LIQUOR THICKENER OIL TANK HEATER WITH THERMOSTAT
+13-05-007(81),DECOMPOSTION TANK #07 AGITATOR MOTOR
+13-05-008(82),DECOMPOSTION TANK #08 AGITATOR MOTOR
+13-05-011,CARNALLITE SURGE TANK #01
+13-05-012,CARNALLITE SURGE TANK #02
+13-05-013,CARNALLITE SURGE TANK #03
+13-05-014(90),CARNALLITE SURGE TANK #04
+13-05-015,REACTOR TNK. AGITATOR 
+13-05-016-01,STONE REMOVAL REPULP TANK AGITATOR #016
+13-05-016-02,STONE REMOVAL REPULP TANK AGITATOR #016 LUBRICANT PUMP
+13-05-026,WASH THICKENER REPULP TANK AGITATOR #26
+13-05-030,DECOMPOSTION TANK #01 AGITATOR MOTOR
+13-05-040,DECOMPOSTION TANK #02 AGITATOR MOTOR
+13-05-050,DECOMPOSTION TANK #03 AGITATOR MOTOR
+13-05-060,DECOMPOSTION TANK #04 AGITATOR MOTOR
+13-05-070,DECOMPOSTION TANK #05 AGITATOR MOTOR
+13-05-077,NEW UPGRADING SCREEN TANK AGITATOR
+13-05-080,DECOMPOSTION TANK #06 AGITATOR MOTOR
+13-05-091,SYLV. SURGE TNK. AGITATOR #91 
+13-05-095,CARNALITE RE-PULP TANK AGITATOR #95
+13-05-100,HOT LEACH TANK #01 AGITATOR MOTOR
+13-05-110,HOT LEACH TANK #02 AGITATOR MOTOR
+13-05-120,HOT LEACH TANK #03 AGITATOR MOTOR
+13-05-130,HOT LEACH TANK #04 AGITATOR MOTOR
+13-05-131,HOT LEACH TANK #05 AGITATOR MOTOR
+13-05-132,HOT LEACH TANK #06 AGITATOR MOTOR
+13-05-150,TAIL REPULP TANK #150 AGITATOR MOTOR 
+13-05-160,CRYSTALLIZER #01 AGITATOR MOTOR
+13-05-170,CRYSTALLIZER #02 AGITATOR MOTOR
+13-05-180,CRYSTALLIZER #03 AGITATOR MOTOR
+13-05-181,CRYSTALLIZER #06 AGITATOR MOTOR
+13-05-190,CRYSTALLIZER #04 AGITATOR MOTOR
+13-05-200,CRYSTALLIZER #05 AGITATOR MOTOR
+13-05-240,PRODUCT TNK. AGITATOR MOTOR #240
+13-21-012,CARNALITE CENTRIFUGE #12
+13-21-013,CARNALITE CENTRIFUGE #13
+13-21-014,CARNALITE CENTRIFUGE #14
+13-21-015,CARNALITE CENTRIFUGE #15
+13-21-016,CARNALITE CENTRIFUGE #16
+13-21-022,CARNALITE CENTRIFUGE #22
+13-21-023,CARNALITE CENTRIFUGE #23
+13-21-024,CARNALITE CENTRIFUGE #24
+13-21-025,CARNALITE CENTRIFUGE #25
+13-21-026,CARNALITE CENTRIFUGE #26
+13-21-027,CARNALITE CENTRIFUGE #27
+13-21-031,TAILS CENTRIFUGE #31
+13-21-032,TAILS CENTRIFUGE #32
+13-21-033,TAILS CENTRIFUGE #33
+13-21-034,TAILS CENTRIFUGE #34
+13-21-042,PRODUCT CENTRIFUGE #42
+13-21-043,PRODUCT CENTRIFUGE #43
+13-21-044,PRODUCT CENTRIFUGE #44
+13-21-051,WASH THICKENER CENTRIFUGE #51
+13-21-052,WASH THICKENER CENTRIFUGE #52
+13-21-053,WASH THICKENER CENTRIFUGE #53
+13-21-054,WASH THICKENER CENTRIFUGE #54
+13-21-055,WASH THICKENER CENTRIFUGE #55
+13-22-011 (VFD),DRIVE SYESTEM FOR BELT FILTER #11 (VFD)
+13-22-012 (VFD),DRIVE SYESTEM FOR BELT FILTER #12 (VFD)
+13-22-013 (VFD),DRIVE SYESTEM FOR BELT FILTER #13 (VFD)
+13-28-100,SYLVANITE UP GRADING SCREEN #100
+13-28-101,SYLVANITE UP GRADING SCREEN #101
+13-28-102,SYLVANITE UP GRADING SCREEN #102
+13-28-103,STONE REMOVAL REPULP TANK SCREEN #103
+13-28-104,STONE REMOVAL REPULP TANK SCREEN #104
+13-29-011,CARNALITE CONVEYOR BELT #11
+13-29-012,CARNALITE CONVEYOR BELT #12
+13-29-020,NEW CARNALITE CONVEYOR BELT #20
+13-29-040,SYLVANITE CONVEYOR BELT #40
+13-29-050,WASH THICKENER REPULP BELT CONVEYOR
+13-29-060,DRYER FEED CONVEYOR BELT #60`;
+
+        const screenCsvData = `TAG number,Equipment Description
+14-01-001A (VFD),NEW COOLER PUMP #01A (VFD)
+14-01-001B (VFD),NEW COOLER PUMP #02B (VFD)
+14-01-071,SCREEN SUMP PUMP
+14-01-201,DUST WATER DILUTION TANK PUMP #01
+14-01-301,DUST WATER DILUTION TANK PUMP #02
+14-02-501,AIR COMPRESSOR FOR NEW COOLER SYSTEM #01
+14-02-502,AIR COMPRESSOR FOR NEW COOLER SYSTEM #02
+14-02-503,AIR COMPRESSOR FOR NEW COOLER SYSTEM #03
+14-02-511,AIR COMPRESSOR FOR NEW DRYER DE DUSTING SYSTEM #01
+14-02-512,AIR COMPRESSOR FOR NEW DRYER DE DUSTING SYSTEM #02
+14-03-020-01 (VFD),ID FAN MOTOR #01 (VFD)
+14-03-020-02 (VFD),ID FAN MOTOR #02 (VFD)
+14-03-031 (VFD),DRYER DILUTION FAN #31 (VFD)
+14-03-032 (VFD),DRYER DILUTION FAN #32 (VFD)
+14-03-050,SCRUBER FAN #50
+14-03-060,EXHAUST FAN #01 (MO1) / SCREEN 
+14-03-070,EXHAUST FAN #02 (MO2) / COMPACTION 
+14-03-080,EXHAUST FAN #01  (MO6) / SHIPPING 
+14-03-090, EXHAUST FAN #01 / WAREHOUSE 
+14-03-100,EXHAUST FAN #02 / WAREHOUSE
+14-03-202-01,COOLER BAGHOUSE EXHAUST FAN #01
+14-03-202-02,COOLER BAGHOUSE EXHAUST FAN #02
+14-03-501, NEW COMBUSTION AIR FAN #501
+14-03-502, NEW COMBUSTION AIR FAN #502
+14-03-601,COOLER SUPPLY AIR FAN #601
+14-03-602,COOLER SUPPLY AIR FAN #602
+14-03-603,COOLER SUPPLY AIR FAN #603
+14-05-010,NEW DISSOLVING TANK AT LOADING DE-DUSTING SYSTEM
+14-05-201,DUST WATER DILUTION TANK - AGITATORS #201
+14-05-301,DUST WATER DILUTION TANK - AGITATORS #301
+14-15-020-01(STARTER),VIBRATORSB AND LIVE BOTTOMS
+14-15-080-01(STARTER),VIBRATORSB AND LIVE BOTTOMS
+14-15-080-02(STARTER),VIBRATORSB AND LIVE BOTTOMS
+14-15-090-01,VIBRATORSB AND LIVE BOTTOMS
+14-15-090-02,VIBRATORSB AND LIVE BOTTOMS
+14-15-100,"SHIPPING BIN CHUTE ""TELESCOPING SYSTEM"" ""EAST"""
+14-15-100-01,#01 SHIPPING BIN CHUTE - Vibrator#01
+14-15-100-02,#01 SHIPPING BIN CHUTE - Vibrator#02
+14-15-100-03,#01 SHIPPING BIN CHUTE - Vibrator#03
+14-15-110,"SHIPPING BIN CHUTE ""TELESCOPING SYSTEM"" ""MIDDLE"""
+14-15-110-01,#02 SHIPPING BIN CHUTE - Vibrator#01
+14-15-110-02,#02 SHIPPING BIN CHUTE - Vibrator#02
+14-15-110-03,#02 SHIPPING BIN CHUTE - Vibrator#03
+14-15-120,"SHIPPING BIN CHUTE ""TELESCOPING SYSTEM"" ""WEST"""
+14-15-120-01,#03 SHIPPING BIN CHUTE - Vibrator#01
+14-15-120-02,#03 SHIPPING BIN CHUTE - Vibrator#02
+14-15-120-03,#03 SHIPPING BIN CHUTE - Vibrator#03
+14-15-390,DISSOLVING MAIN HOPPER VIBRATOR
+14-15-400,DISSOLVING SCREEN SHUTE VIBRATOR
+14-25-001,PRIMARY FUEL SKID PUMP #01
+14-25-002,PRIMARY FUEL SKID PUMP #02
+14-25-003,SECONDARY FUEL SKID PUMP #01
+14-25-004,SECONDARY FUEL SKID PUMP #02
+14-25-510-01,ROTARY DRYER DRIVE
+14-25-510-02,AUX. DRYER MOTOR 
+14-25-510-03,BURNER CARRIAGE (TROLLEY) MOTOR
+14-25-510-04,DRYER THRUSTER RELEASED DRUM BREAK
+14-26-014,NEW CRUSHER SCREEN MOTOR
+14-28-001,ROTEX SCREEN #01
+14-28-002,ROTEX SCREEN #02
+14-28-003,ROTEX SCREEN #03
+14-28-010,DISSOLVING SCREEN
+14-29-010,COLLECTING CONVEYOR BELT #10 MOTOR 
+14-29-020,SHIPPING CONVEYOR BELT #20
+14-29-030,STORAGE CONVEYOR BELT#30
+14-29-040,RECLAIM CONVEYOR BELT #40  
+14-29-050,RECLAIM CONVEYOR BELT #50
+14-29-060,RECLAIM CONVEYOR BELT #60
+14-29-070,RECLAIM CONVEYOR BELT #70
+14-29-081,TRIPPER DRIVE MOTOR
+14-29-081-TROLLEY,TRIPPER DRIVE MOTOR
+14-29-081-WHEEL,TRIPPER DRIVE MOTOR
+14-29-090,DISSOLVING BELT CONEYOR #02 / MOBILE BELT
+14-29-100,DISSOLVING BELT CONEYOR #01 / LONG BELT
+14-29-120M1,Fresh feed KCL fines/dust belt conveyor main drive
+14-29-120M2,Fresh feed KCL fines/dust belt conveyor cleaning drive
+14-29-200M1,Fresh feed KCL fines/dust belt conveyor main drive
+14-29-200M2,Fresh feed KCL fines/dust belt conveyor cleaning drive
+14-30-001,ANTICACKING MIXER
+14-30-002,NEW SCREW CONVEYOR OF WAREHOUSE & SHIPPING DE-DUSTING BAGHOUSES.
+14-30-040,COOLER CHAIN CONVYOR WITH SCLAPING SCREEN #60 
+14-30-050,SCREW CONVEYOR #50
+14-30-170,FINE PRODUCT SCREW CONVEYOR #170
+14-30-180,COMPACTION FEED BIN SCREW CONVEYOR #180
+14-30-181 (VFD) AC (YARA),COMPACTION FEED BIN SCREW CONVEYOR ANTICAKING SYSTEM #181 (VFD) AC
+14-30-181 (VFD) DC (YARA SPARE),COMPACTION FEED BIN SCREW CONVEYOR ANTICAKING SYSTEM #181 (VFD) DC
+14-30-190,DUST SCREW CONVEYOR #190
+14-30-191,NEW DUST SCREW AT BUCKET ELEVATOR #20 OUTLET CHUTE
+14-30-192,NEW DUST SCREW UNDER GRANULAR BIN
+14-30-200M,Fresh feed KCL fines/dust screw feeder main drive
+14-30-200VFD,Fresh feed KCL fines/dust screw feeder main drive
+14-30-201,Integrated screw conveyor below BAG HOUSE 1 #201
+14-30-202,Integrated screw conveyor below BAG HOUSE 1 #202
+14-30-203,Integrated screw conveyor below BAG HOUSE 1 #203
+14-30-204,Integrated screw conveyor below BAG HOUSE 1 #204
+14-30-210,Screw conveyor (Gathering below BAG HOUSE 1) #210
+14-30-220,SCREW CONVEYOR (GATHERING BELOW BAG HOUSE 1) #220
+14-30-290,Screw conveyor below cyclone hopper #01
+14-30-301,Integrated screw conveyor below BAG HOUSE 2 #301
+14-30-302,Integrated screw conveyor below BAG HOUSE 2 #302
+14-30-303,Integrated screw conveyor below BAG HOUSE 2 #303
+14-30-304,Integrated screw conveyor below BAG HOUSE 2 #304
+14-30-310,Screw conveyor (Gathering below BAG HOUSE 2) #310
+14-30-320,Screw conveyor (Gathering below BAG HOUSE 2) #320
+14-30-403,COOLER SCREW TO STANDARD BIN
+14-30-450,SCREW CONVEYOR MO3 / SCREEN
+14-30-460,SCREW CONVEYOR MO4 / COMPACTION
+14-30-470,SCREW ( MO3)/ WAREHOUSE
+14-31-010-01,BUCKET ELEVATOR #10
+14-31-010-02,BUCKET ELEVATOR #10 / MAINTENANCE
+14-31-020,DUST BUCKET ELEVATOR #20
+14-31-060-01,COOLER BUCKET ELEVATOR MAIN MOTOR
+14-31-060-02,COOLER BUCKET ELEVATOR MAINTENANCE MOTOR
+14-31-070M,Fresh feed KCL fines/dust bucket elevator main drive
+14-33-021-01,STRORAGE PAN FEEDER #21
+14-33-021-02,STRORAGE PAN FEEDER #21
+14-33-022-01,STRORAGE PAN FEEDER #22
+14-33-022-02,STRORAGE PAN FEEDER #22
+14-33-023-01,STRORAGE PAN FEEDER #23
+14-33-023-02,STRORAGE PAN FEEDER #23
+14-33-024-01,STRORAGE PAN FEEDER #24
+14-33-024-02,STRORAGE PAN FEEDER #24
+14-33-025-01,STRORAGE PAN FEEDER #25
+14-33-025-02,STRORAGE PAN FEEDER #25
+14-33-026-01,STRORAGE PAN FEEDER #26
+14-33-026-02,STRORAGE PAN FEEDER #26
+14-33-027-01,STRORAGE PAN FEEDER #27
+14-33-027-02,STRORAGE PAN FEEDER #27
+14-33-028-01,STRORAGE PAN FEEDER #28
+14-33-028-02,STRORAGE PAN FEEDER #28
+14-36-020-01,Isolating damper ID fan 20  inlet/ electromechanical #01
+14-36-020-02,Isolating damper ID Fan 20 outlet/ electromechanical #01
+14-36-021-01,Isolating damper ID fan 21 inlet/ electromechanical #02
+14-36-021-02,Isolating damper ID Fan 21 outlet/ electromechanical #02
+14-36-201,WATER DILUTION TANK DAMPER
+14-36-211,BAG HOUSE 1 Filter inlet DUMPER #211
+14-36-301,WATER DILUTION TANK DAMPER
+14-36-311,BAG HOUSE 2 Filter inlet DUMPER #311
+14-36-410,Cyclone inlet damper #410
+14-36-510,Cyclone inlet damper #510
+14-36-720,DIVERTER #720
+14-36-730,DIVERTER #730
+14-36-740,DIVERTER #740
+14-54-201,Rotary valve below filter SCREW 201 trough #201
+14-54-202,Rotary valve below filter SCREW 202 trough #202
+14-54-203,Rotary valve below filter SCREW 203 trough #203
+14-54-204,Rotary valve below filter SCREW 204 trough #204
+14-54-301,Rotary valve below filter SCREW 301 trough #301
+14-54-302,Rotary valve below filter SCREW 302 trough #302
+14-54-303,Rotary valve below filter SCREW 303 trough #303
+14-54-304,Rotary valve below filter SCREW 304 trough #304
+14-54-400 (VFD),COOLER PRODUCT OUTLET ROTARY VALVE #400
+14-54-410,Rotary valves below cyclones hopper #410
+14-54-501,ROTARY AIR LOCK VALVE (BCYCLON)
+14-54-502,ROTARY AIR LOCK VALVE (NEW COOLER BAGFILTER) #502
+14-54-510,Rotary valves below cyclones hopper #510
+14-54-650,ROTARY VALVE (MO6)/ COMPACTION 
+14-54-660,ROTARY VALVE  (MO4)/ WAREHOUSE
+14-54-670,ROTARY VALVE (MO8) / SHIPPING
+14-54-680,ROTARY VALVE (MO5)/SCREEN
+14-75-800 M,DIVERTER UNIT`;
+        
+        const compactionCsvData = `TAG number,Equipment Description
+16-01-213M,post treatment water pump main drive
+16-01-214M,post treatment water pump main drive
+16-01-216M,grease lubrication roller press compaction circuit 1&2 redundant grease pump A
+16-01-217 M,PRESSURE GAUGES
+16-01-218 M,PRESSURE GAUGES
+16-01-219 M,End Suction Centrifugal Pump
+16-01-220 M,End Suction Centrifugal Pump
+16-01-221 M,End Suction Centrifugal Pump 
+16-01-223M,post treatment oil / amin pump main drive
+16-01-224M,post treatment oil / amin pump main drive
+16-01-226M,grease lubrication roller press compaction circuit 1&2 redundant grease pump B
+16-01-227 M,Rotary Lobe Pump
+16-01-228 M,Rotary Lobe Pump
+16-03-310M,post treatment Cooling Air fan main drive
+16-03-320M,Fan - Pre-Heater External Feed Combustion Air main drive
+16-03-700M,Fan - External Feed Pre-Heater Recirculation Air main drive
+16-03-710M,post treatment Cooling Air fan main drive
+16-03-720M,post treatment mixing air fan main drive
+16-03-730M,post treatment de-dusting exhaust air fan main drive
+16-03-740M,de-dusting exhaust air fan
+16-03-750M2,Fan - External Feed Pre-Heater Exhaust Air throttle valve actuator / motor valve
+16-03-760M,Fan - External Feed Equipment De-Dusting main drive
+16-05-125M,post treatment oil / amin tank agitator main drive
+16-05-135M,post treatment oil / amin dosing tank agitator motor control
+16-05-145 M,Mixing Agitator
+16-08-160M1,NATUS SPARE FEEDER
+16-08-160M2,NATUS SPARE FEEDER
+16-08-160M3,NATUS SPARE FEEDER
+16-20-070M,Compaction feed drag conveyor main drive
+16-20-080M,crushed compaction product circuit 1 drag conveyor main drive
+16-20-090M,crushed compaction product circuit 2 drag conveyor main drive
+16-20-100M,recycle drag conveyor main drive
+16-25-400M,post treatment dryer/cooler main drive
+16-25-500M1,Pre-Heater - External Feed weir dryer cold area flap
+16-25-500M2,Pre-Heater - External Feed bypass flap dryer
+16-25-815M1,Hot Gas Generator - Pre-Heater External Feed Diesel pump motor 1
+16-25-815M2,Hot Gas Generator - Pre-Heater External Feed Diesel pump motor 2
+16-26-010M,Fresh feed oversize crusher main drive
+16-26-017M1,compaction circuit 1 flake breaker main drive 1
+16-26-017M2,compaction circuit 1 flake breaker main drive 2
+16-26-027M1,compaction circuit 2 flake breaker main drive 1
+16-26-027M2,compaction circuit 2 flake breaker main drive 2
+16-26-031M,compaction circuit 1 oversize crusher main drive 1
+16-26-032M,compaction circuit 2 oversize crusher main drive 1
+16-26-033M1,compaction circuit 1 secondary screen oversize product crusher main drive fixed roller
+16-26-033M2,compaction circuit 1 secondary screen oversize product crusher main drive floating roller
+16-26-034M1,compaction circuit 1 secondary screen oversize product crusher main drive floating roller
+16-26-034M2,compaction circuit 1 secondary screen oversize product crusher main drive fixed roller
+16-26-035M1,compaction circuit 2 secondary screen oversize product crusher main drive floating roller
+16-26-035M2,compaction circuit 2 secondary screen oversize product crusher main drive fixed roller
+16-26-036M1,compaction circuit 2 secondary screen oversize product crusher main drive fixed roller
+16-26-036M2,compaction circuit 2 secondary screen oversize product crusher main drive fixed roller
+16-27-016M3,compaction circuit 1 roller press screw feeder drive side
+16-27-016M4,compaction circuit 1 roller press screw feeder non-drive side
+16-27-016M5,compaction circuit 1 roller press gear box fixed roller oil cooling pump
+16-27-016M6,compaction circuit 1 roller press gear box floating roller oil cooling pump
+16-27-016M7,compaction circuit 1 roller press hydraulic pump
+16-27-027M3,compaction circuit 2 roller press screw feeder drive side
+16-27-027M4,compaction circuit 2 roller press screw feeder non-drive side
+16-27-027M5,compaction circuit 2 roller press gear box floating roller oil cooling pump
+16-27-027M6,compaction circuit 2 roller press gear box fixed roller oil cooling pump
+16-27-027M7,compaction circuit 2 roller press hydraulic pump
+16-28-020M,Fresh feed KCL fines/dust screen main drive
+16-28-031M,compaction circuit 1 primary screen main drive
+16-28-032M,compaction circuit 2 primary screen main drive
+16-28-041M,compaction circuit 1 secondary screen main drive
+16-28-042M,compaction circuit 1 secondary screen main drive
+16-28-043M,compaction circuit 2 secondary screen main drive
+16-28-044M,compaction circuit 2 secondary screen main drive
+16-28-050M,post treatment dryer/cooler product screen main drive
+16-28-100M,CONTAINER LOADING ROTEX PAN FEEDER
+16-29-140M1,compaction product belt conveyor main drive
+16-29-140M2,compaction product belt conveyor cleaning drive
+16-29-160M1,post treatment compaction product storage bin weigh feeder main drive
+16-29-180M,post treatment compaction product storage bin weigh feeder main drive
+16-29-200M1,post treatment final granulate belt conveyor main drive
+16-29-200M2,post treatment final granulate belt conveyor cleaning drive
+16-29-220M1,belt conveyor external fresh feed KCl Product main drive
+16-29-220M2,belt conveyor external fresh feed KCl Product cleaning drive
+16-29-300 M,BELT CONVEYORS
+16-29-300TRM1,TRIPPER CAR TROLLEY MOTOR
+16-29-300TRM2,TELESCOPIC CHUTE MOTOR
+16-29-300TRM3,REELING SYSTEM MOTOR
+16-29-400 M,TRUCK LOADING MOTRIDAL BELT CONVEYER
+16-29-500M,CONTAINER LOADING MOTRIDAL BELT CONVEYER
+16-29-520M,CONTAINER LOADING MOTRIDAL BELT CONVEYER
+16-29-540M1,CONTAINER SHUTTLE MOTRIDAL BELT CONVEYER
+16-29-540M2,CONTAINER SHUTTLE MOTRIDAL BELT CONVEYER
+16-29-540M3,CONTAINER SHUTTLE MOTRIDAL BELT CONVEYER
+16-29-540M4,CONTAINER SHUTTLE MOTRIDAL BELT CONVEYER
+16-29-600M1,NATUS SPARE FEEDER
+16-29-600M2,NATUS SPARE FEEDER
+16-30-161M1,compaction circuit 1 secondary screen oversize product vibration feeder main drive
+16-30-161M2,compaction circuit 1 secondary screen oversize product vibration feeder main drive
+16-30-162M1,compaction circuit 2 secondary screen oversize product vibration feeder main drive
+16-30-162M2,compaction circuit 2 secondary screen oversize product vibration feeder main drive
+16-30-171M1,compaction circuit 1 secondary screen oversize product vibration feeder main drive
+16-30-171M2,compaction circuit 1 secondary screen oversize product vibration feeder main drive
+16-30-172M1,compaction circuit 2 secondary screen oversize product vibration feeder main drive
+16-30-172M2,compaction circuit 2 secondary screen oversize product vibration feeder main drive
+16-30-205M1,Iron oxide loss-in-weight feeder/M1 Screw Motor VFD
+16-30-205M2,Iron oxide loss-in-weight feeder/M2 Agitator Motor
+16-30-205M3,Iron oxide loss-in-weight feeder/M3 Air Blower
+16-30-205M4,Iron oxide loss-in-weight feeder/M4 Vibrating Motor
+16-30-210M1,Iron oxide loss-in-weight feeder/M1 Screw Motor VFD
+16-30-210M2,Iron oxide loss-in-weight feeder/M2 Agitator Motor
+16-30-210M3,Iron oxide loss-in-weight feeder/M3 Air Blower
+16-30-210M4,Iron oxide loss-in-weight feeder/M4 Vibrating Motor
+16-30-215M1,post treatment amine feed loss-in-weight feeder/M1 Screw Motor VFD
+16-30-215M2,post treatment amine feed loss-in-weight feeder/M2 Agitator Motor
+16-30-215M3,post treatment amine feed loss-in-weight feeder/M3 Air Blower
+16-30-215M4,post treatment amine feed loss-in-weight feeder/M4 Vibrating Motor
+16-30-220M,Fresh feed storage bin screw conveyor main drive
+16-30-222M,post treatment compaction product moisture mixer main drive
+16-30-240M,de-dusting bag house filter screw feeder main drive
+16-30-250M,Screw Feeder - Bag House Filter Pre-Heater External Feed main drive
+16-30-255M,post treatment oil / amin mixer main drive
+16-30-260M,Compaction feed overflow screw conveyor main drive
+16-30-270M,Screw Conveyor - External Feed to Pre-Heater main drive
+16-30-270M2,Screw Conveyor - External Feed to Pre-Heater main drive / Motor Fan
+16-30-275M,Screw Conveyor - External Feed from Filter main drive
+16-30-280M,post treatment de-dusting bag house filter drying zone screw feeder main drive
+16-30-290M,post treatment de-dusting bag house filter cooling zone screw feeder main drive
+16-31-070M1,Bucket Elevator - External Feed to Pre-Heater main drive
+16-31-070M2,Bucket Elevator - External Feed to Pre-Heater maintenance drive
+16-31-080M,Fresh feed crusher product bucket elevator main drive
+16-31-090M1,Compaction feed bucket elevator main drive
+16-31-090M2,Compaction feed bucket elevator maintenance drive
+16-31-100M1,crushed compaction product circuit 1 bucket elevator main drive
+16-31-100M2,crushed compaction product circuit 1 bucket elevator maintenance drive
+16-31-110M1,crushed compaction product circuit 2 bucket elevator main drive
+16-31-110M2,crushed compaction product circuit 2 bucket elevator maintenance drive
+16-31-120M1,post treatment compaction product bucket elevator main drive
+16-31-120M2,post treatment compaction product bucket elevator maintenance drive
+16-31-130M1,post treatment product bucket elevator main drive
+16-31-130M2,post treatment product bucket elevator maintenance drive
+16-31-140M1, bucket elevator external fresh feed KCL  main drive
+16-31-140M2, bucket elevator external fresh feed KCL  maintenance drive
+16-35-801 M,Motor for TLS (Hopper)
+16-35-802 M,Motor for TLS (Hopper)
+16-35-803 M,Motor for TLS (Hopper)
+16-54-600M,de-dusting bag house filter rotary valve main drive
+16-54-700M,post treatment de-dusting bag house filter drying zone rotary valve main drive
+16-54-701M,post treatment de-dusting bag house filter cooling zone rotary valve main drive
+16-54-750M,Rotary Valve - Pre-Heater External Feed main drive
+16-54-800 M,200T/h Rotary Valve 
+16-54-850M,external feed de-dusting bag house filter drying zone rotary valve main drive
+16-54-900M,0
+16-54-910M,0
+16-54-950M,Rotary Valve - External Feed Equipment De-Dusting main drive
+16-60-5100 M,Electrical motorized Slide Gate
+16-60-5200 M,Electrical motorized Slide Gate
+16-60-5300 M,Electrical motorized Slide Gate
+16-60-745M,de-dusting exhaust air fan flap main drive
+16-60-750M,de-dusting exhaust air fan flap bypass flap dryer
+16-75-0750M,Fresh feed KCL fines/dust diverter gate main drive
+16-75-0755M,Compaction feed overflow diverter gate main drive
+16-75-850M,NATUS SPARE FEEDER
+16-85-600M1,de-dusting bag house filter throttle valve actuator
+16-85-600M2,de-dusting bag house filter throttle valve actuator`;
+
+        // --- DATA LOADING ---
+        function loadEquipmentData() {
+            const dataMap = {
+                HLP: hlpCsvData,
+                SCREEN: screenCsvData,
+                COMPACTION: compactionCsvData
+            };
+
+            for (const zone in dataMap) {
+                try {
+                    const text = dataMap[zone];
+                    const lines = text.split('\n').slice(1); // Skip header row
+                    equipmentData[zone] = lines.map(line => {
+                        const [tag, ...descriptionParts] = line.split(',');
+                        const description = descriptionParts.join(',').trim(); // Join back description parts
+                        return { tag: tag?.trim(), description: description.replace(/"/g, '') }; // Remove quotes
+                    }).filter(e => e.tag && e.description);
+                } catch (error) {
+                    console.error(`Error parsing data for ${zone}:`, error);
+                    showAlert(`Failed to parse equipment data for ${zone}. Please check the console.`);
+                }
+            }
+        }
+        
+        // --- LOGIN/LOGOUT ---
+        window.login = (user) => {
+            currentUser = user;
+            document.getElementById('current-user').innerText = `User: ${currentUser}`;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('user-interface').classList.remove('hidden');
+            listenForTasks();
+        };
+
+        window.showAdminLogin = () => {
+            document.getElementById('user-selection').classList.add('hidden');
+            document.getElementById('admin-login').classList.remove('hidden');
+        };
+        
+        window.showUserSelection = () => {
+            document.getElementById('admin-login').classList.add('hidden');
+            document.getElementById('user-selection').classList.remove('hidden');
+        };
+
+        window.loginAdmin = () => {
+            const password = document.getElementById('admin-password').value;
+            if (password === 'Karak@2025') {
+                currentUser = 'Admin';
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-interface').classList.remove('hidden');
+                listenForTasks();
+                scheduleWeeklyReset();
+            } else {
+                showAlert('Incorrect password.');
+            }
+        };
+
+        window.logout = () => {
+            currentUser = null;
+            if (unsubscribe) unsubscribe();
+            document.getElementById('user-interface').classList.add('hidden');
+            document.getElementById('admin-interface').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('admin-password').value = '';
+        };
+
+        // --- UI & MODALS ---
+        window.showAlert = (message, title = 'Alert') => {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerText = message;
+            document.getElementById('alert-modal').classList.remove('hidden');
+        };
+
+        window.closeAlertModal = () => {
+            document.getElementById('alert-modal').classList.add('hidden');
+        };
+        
+        window.selectZone = (zone) => {
+            currentZone = zone;
+            document.getElementById('equipment-modal-title').innerText = `Select Equipment for ${zone}`;
+            populateEquipmentTable(zone);
+            document.getElementById('equipment-modal').classList.remove('hidden');
+        };
+
+        window.closeEquipmentModal = () => {
+            document.getElementById('equipment-modal').classList.add('hidden');
+            document.getElementById('tag-search').value = '';
+        };
+
+        window.selectEquipment = (tag, description) => {
+             // Check for recent PM
+            const recentTask = allTasks.find(task => task.tag === tag);
+            if(recentTask) {
+                const taskTime = recentTask.timestamp.toDate();
+                const now = new Date();
+                const diffHours = (now - taskTime) / (1000 * 60 * 60);
+                const resetIntervalHours = (document.getElementById('reset-interval').value || 604800000) / 3600000;
+                
+                if (diffHours < resetIntervalHours) {
+                    showAlert(`Warning: This equipment had a PM performed by ${recentTask.user} at ${taskTime.toLocaleString()}. Continuing will create a new record.`, "Recent PM Alert");
+                }
+            }
+            
+            selectedEquipment = { tag, description };
+            document.getElementById('pm-tag-number').innerText = tag;
+            document.getElementById('pm-equipment-description').innerText = description;
+            closeEquipmentModal();
+            document.getElementById('pm-modal').classList.remove('hidden');
+        };
+
+        window.closePmModal = () => {
+            document.getElementById('pm-modal').classList.add('hidden');
+            // Reset form
+             const form = document.getElementById('pm-modal');
+             form.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+             form.querySelector('textarea').value = '';
+        };
+
+        // --- DATA HANDLING & DISPLAY ---
+        function populateEquipmentTable(zone) {
+            const tableBody = document.getElementById('equipment-table-body');
+            const searchInput = document.getElementById('tag-search');
+            
+            const renderTable = (filter = '') => {
+                tableBody.innerHTML = '';
+                const filteredData = equipmentData[zone].filter(eq => 
+                    eq.tag.toLowerCase().includes(filter.toLowerCase()) || 
+                    eq.description.toLowerCase().includes(filter.toLowerCase())
+                );
+
+                if (filteredData.length === 0) {
+                     tableBody.innerHTML = `<tr><td colspan="3" class="text-center p-4">No equipment found.</td></tr>`;
+                     return;
+                }
+
+                filteredData.forEach(({ tag, description }) => {
+                    const row = document.createElement('tr');
+                    // Use backticks and escape description for the onclick handler
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">${tag}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${description}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button onclick="selectEquipment('${tag}', \`${description.replace(/'/g, "\\'")}\`)" class="bg-blue-500 text-white font-semibold py-1 px-3 rounded-md hover:bg-blue-600">Select</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            
+            searchInput.onkeyup = () => renderTable(searchInput.value);
+            renderTable(); // Initial render
+        }
+
+        window.submitPmTask = async () => {
+            const task = {
+                user: currentUser,
+                zone: currentZone,
+                tag: selectedEquipment.tag,
+                description: selectedEquipment.description,
+                sound: document.querySelector('input[name="sound"]:checked')?.value || 'N/A',
+                vibration: document.querySelector('input[name="vibration"]:checked')?.value || 'N/A',
+                heat: document.querySelector('input[name="heat"]:checked')?.value || 'N/A',
+                motor_umbrella: document.querySelector('input[name="motor_umbrella"]:checked')?.value || 'N/A',
+                status: document.querySelector('input[name="status"]:checked')?.value || 'N/A',
+                note: document.getElementById('note').value,
+                timestamp: serverTimestamp()
+            };
+            
+            try {
+                await addDoc(collection(db, "pm_tasks"), task);
+                showAlert('PM Task Saved Successfully!', 'Success');
+                closePmModal();
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                showAlert('Failed to save PM task. Please try again.', 'Error');
+            }
+        };
+
+        function listenForTasks() {
+            const q = query(collection(db, "pm_tasks"), orderBy("timestamp", "desc"));
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                if (currentUser === 'Admin') {
+                    displayAdminHistory(allTasks);
+                    displayAdminLive(allTasks);
+                } else {
+                    displayRecentActivities(allTasks);
+                }
+            }, (error) => {
+                console.error("Error listening to tasks: ", error);
+                showAlert("Error connecting to the database. Please check your connection and Firebase setup.", "Database Error");
+            });
+        }
+
+        function displayRecentActivities(tasks) {
+            const container = document.getElementById('recent-activities');
+            container.innerHTML = '';
+            if (tasks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">No recent activities to show.</p>';
+                return;
+            }
+            tasks.slice(0, 6).forEach(task => { // Show latest 6
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500';
+                card.innerHTML = `
+                    <h3 class="font-bold text-lg">${task.tag}</h3>
+                    <p class="text-gray-600">${task.description}</p>
+                    <div class="mt-2 text-sm text-gray-500">
+                        <span>by <strong>${task.user}</strong> on </span>
+                        <span>${task.timestamp ? task.timestamp.toDate().toLocaleString() : 'Just now'}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function displayAdminLive(tasks) {
+             const container = document.getElementById('admin-live-activities');
+             container.innerHTML = '';
+              if (tasks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">No live activities.</p>';
+                return;
+            }
+             tasks.slice(0, 10).forEach(task => { // show latest 10
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-lg shadow border animate-pulse';
+                card.innerHTML = `
+                    <h3 class="font-bold text-lg text-blue-700">${task.tag} - ${task.description}</h3>
+                    <p class="text-gray-700">Status: <span class="font-semibold">${task.status}</span>, Sound: <span class="font-semibold">${task.sound}</span></p>
+                    <div class="mt-2 text-sm text-gray-500">
+                        <span>by <strong>${task.user}</strong> at </span>
+                        <span>${task.timestamp ? task.timestamp.toDate().toLocaleString() : 'Just now'}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+             });
+        }
+        
+         function displayAdminHistory(tasks) {
+            const container = document.getElementById('admin-history');
+            let tableHTML = `<table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50"><tr>
+                    <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tag</th>
+                    <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
+
+            if (tasks.length === 0) {
+                 container.innerHTML = '<p class="text-center p-4">No history found.</p>';
+                 return;
+            }
+
+            tasks.forEach(task => {
+                tableHTML += `<tr>
+                    <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
+                    <td class="px-2 py-2 whitespace-nowrap">${task.tag}</td>
+                    <td class="px-2 py-2 whitespace-nowrap">${task.description}</td>
+                    <td class="px-2 py-2 whitespace-nowrap">${task.timestamp ? task.timestamp.toDate().toLocaleString() : ''}</td>
+                </tr>`;
+            });
+            tableHTML += `</tbody></table>`;
+            container.innerHTML = tableHTML;
+        }
+
+        // --- ADMIN FEATURES ---
+        function getTasksForReport() {
+            const interval = document.getElementById('reset-interval').value;
+            const cutoff = new Date(Date.now() - parseInt(interval));
+            return allTasks.filter(task => task.timestamp && task.timestamp.toDate() > cutoff);
+        }
+
+        window.exportToExcel = () => {
+            const tasksToExport = getTasksForReport();
+            if(tasksToExport.length === 0) {
+                showAlert("No data in the selected time frame to export.");
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "User,Zone,TAG,Description,Sound,Vibration,Heat,Motor Umbrella,Status,Note,Timestamp\r\n";
+            tasksToExport.forEach(task => {
+                const row = [
+                    task.user, task.zone, task.tag, `"${task.description}"`, task.sound, task.vibration,
+                    task.heat, task.motor_umbrella, task.status, `"${(task.note || '').replace(/"/g, '""')}"`,
+                    task.timestamp.toDate().toISOString()
+                ].join(",");
+                csvContent += row + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `pm_report_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+        
+        window.exportToPDF = () => {
+             const tasksToExport = getTasksForReport();
+             if(tasksToExport.length === 0) {
+                showAlert("No data in the selected time frame to export.");
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.autoTable({
+                head: [['User', 'TAG', 'Description', 'Status', 'Timestamp']],
+                body: tasksToExport.map(task => [
+                    task.user,
+                    task.tag,
+                    task.description,
+                    task.status,
+                    task.timestamp.toDate().toLocaleString()
+                ]),
+            });
+
+            doc.save(`pm_report_${new Date().toISOString().split('T')[0]}.pdf`);
+        };
+        
+        async function sendEmailReport(tasks) {
+            console.log("Simulating email report sending...");
+             // In a real application, this would be a backend function (e.g., Cloud Function).
+            const subject = `Weekly PM Report - ${new Date().toISOString().split('T')[0]}`;
+            let body = "Here is the weekly PM report.\n\n";
+             tasks.forEach(task => {
+                body += `- ${task.tag} by ${task.user} at ${task.timestamp.toDate().toLocaleString()}\n`;
+            });
+             console.log({
+                to: 'abdallahdomer@yahoo.com',
+                subject,
+                body
+            });
+             showAlert("Email report has been simulated. See browser console for details.", "Email Sent");
+
+        }
+        
+        async function resetOldData() {
+            const interval = document.getElementById('reset-interval').value;
+            const cutoffDate = new Date(Date.now() - parseInt(interval));
+            const cutoffTimestamp = Timestamp.fromDate(cutoffDate);
+
+            console.log(`Checking for tasks older than ${cutoffDate.toLocaleString()}`);
+
+            const q = query(collection(db, "pm_tasks"), where("timestamp", "<", cutoffTimestamp));
+            const oldTasksSnapshot = await getDocs(q);
+
+            if (oldTasksSnapshot.empty) {
+                console.log("No old tasks to reset.");
+                return;
+            }
+            
+            // Send email before deleting
+            const tasksToReport = oldTasksSnapshot.docs.map(doc => doc.data());
+            await sendEmailReport(tasksToReport);
+
+            // Delete old tasks
+            const batch = writeBatch(db);
+            oldTasksSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            console.log(`Deleted ${oldTasksSnapshot.size} old tasks.`);
+            showAlert(`Reset complete. ${oldTasksSnapshot.size} old tasks have been archived and deleted.`, "Data Reset");
+        }
+        
+        function scheduleWeeklyReset() {
+            // This simulates a cron job. In a real app, use a serverless function triggered on a schedule.
+            setInterval(() => {
+                resetOldData();
+            }, 60 * 60 * 1000); // Check every hour
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            loadEquipmentData();
+            console.log("Equipment data loaded.");
+        };
+    </script>
+</body>
+</html>
