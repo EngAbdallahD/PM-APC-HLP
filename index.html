@@ -17,9 +17,6 @@
             background-size: cover;
             background-position: center;
         }
-        .scroll-to-view {
-            scroll-behavior: smooth;
-        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -98,50 +95,45 @@
                     <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-800 mb-4">PM History & Reports</h2>
-                            <div class="space-y-4 border p-4 rounded-lg">
-                                <h3 class="font-semibold text-lg text-gray-700">Report Period</h3>
-                                <div class="flex items-center space-x-4">
+                             <div class="flex space-x-4 my-4">
+                                <button onclick="exportToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export All to Excel</button>
+                                <button onclick="exportToPDF()" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Export All to PDF</button>
+                            </div>
+                            <div id="admin-history" class="h-80 overflow-y-auto border rounded-lg p-2"></div>
+                        </div>
+
+                        <div class="space-y-6 border-t pt-6">
+                            <div id="data-management" class="space-y-4 border p-4 rounded-lg">
+                                <h3 class="font-semibold text-lg text-gray-700">Automated Archiving Schedule</h3>
+                                <p class="text-sm text-gray-600">Set the schedule for automatically deleting old PM records. This cycle runs when the admin logs in.</p>
+                                 <div class="flex items-center space-x-4">
                                     <label for="interval-duration" class="font-semibold">Interval:</label>
                                     <select id="interval-duration" class="p-2 border rounded-lg">
-                                        <option value="time">Time to Time</option>
                                         <option value="daily">Daily</option>
                                         <option value="weekly" selected>Weekly</option>
                                         <option value="monthly">Monthly</option>
                                     </select>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 gap-4">
                                     <div>
-                                        <label for="start-date" class="font-semibold">Start Date:</label>
+                                        <label for="start-date" class="font-semibold">Cycle Start Date:</label>
                                         <input type="date" id="start-date" class="w-full p-2 border rounded-lg">
-                                        <input type="time" id="start-time" class="w-full p-2 border rounded-lg mt-2">
                                     </div>
-                                    <div>
-                                        <label for="end-date" class="font-semibold">End Date:</label>
-                                        <input type="date" id="end-date" class="w-full p-2 border rounded-lg">
-                                        <input type="time" id="end-time" class="w-full p-2 border rounded-lg mt-2">
+                                    <div class="bg-gray-100 p-2 rounded-lg text-center">
+                                        <p class="text-sm font-medium">Next cycle ends on: <strong id="end-date-display" class="text-blue-600"></strong></p>
                                     </div>
                                 </div>
+                                 <div class="flex flex-wrap gap-4">
+                                    <button onclick="runCycleManually()" class="bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-700 transition">Run Archive Cycle Now</button>
+                                    <button onclick="confirmClearAllData()" class="bg-red-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-900 transition">Clear ALL History</button>
+                                </div>
                             </div>
-                            <div class="flex space-x-4 my-4">
-                                <button onclick="exportToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export to Excel</button>
-                                <button onclick="exportToPDF()" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Export to PDF</button>
-                            </div>
-                            <div id="admin-history" class="h-80 overflow-y-auto border rounded-lg p-2"></div>
-                        </div>
-                        <div class="space-y-6 border-t pt-6">
-                            <div id="user-management" class="space-y-4 border p-4 rounded-lg">
+
+                             <div id="user-management" class="space-y-4 border p-4 rounded-lg">
                                 <h3 class="font-semibold text-lg text-gray-700">Manage Users</h3>
                                 <div id="user-editor-container" class="space-y-2">
                                     </div>
                                 <button onclick="saveUsers()" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Save Users</button>
-                            </div>
-
-                            <div id="data-management" class="space-y-4 border p-4 rounded-lg">
-                                <h3 class="font-semibold text-lg text-gray-700">Data Management</h3>
-                                <div class="flex flex-wrap gap-4">
-                                    <button onclick="archivePeriodData()" class="bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-700 transition">Archive Period</button>
-                                    <button onclick="confirmClearAllData()" class="bg-red-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-900 transition">Clear ALL History</button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -246,6 +238,7 @@
                 </div>
             </div>
         </div>
+
     </div>
 
     <script type="module">
@@ -281,15 +274,14 @@
                 { id: 'user3', name: 'Moatasem', color: 'bg-green-600', hover: 'hover:bg-green-700' },
                 { id: 'user4', name: 'User 4', color: 'bg-green-600', hover: 'hover:bg-green-700' }
             ],
-            // NEW: Date settings are now stored
-            dateSettings: {
+            archiveSchedule: {
                 start: null,
                 end: null,
                 interval: 'weekly'
             }
         };
 
-        // --- EMBEDDED CSV DATA (Full data included) ---
+        // --- EMBEDDED CSV DATA ---
         const hlpCsvData = `TAG number,Equipment Description
 13-01-015,1ST STAGE DECOMPOSTION THICKNER DISCHARGE PUMP #15
 13-01-016,1ST STAGE DECOMPOSTION THICKNER DISCHARGE PUMP #16
@@ -910,22 +902,20 @@
             }
         }
 
-        // --- USER AND DATE SETTINGS ---
+        // --- USER AND SCHEDULE SETTINGS ---
         function loadSettings() {
             const savedSettings = localStorage.getItem('pmAppSettings');
             if (savedSettings) {
                 const parsed = JSON.parse(savedSettings);
-                // Merge saved settings with defaults to prevent errors if structure changed
                 userSettings.users = parsed.users || userSettings.users;
-                userSettings.dateSettings = parsed.dateSettings || userSettings.dateSettings;
+                userSettings.archiveSchedule = parsed.archiveSchedule || userSettings.archiveSchedule;
             }
         }
 
         function saveSettings() {
-            // Before saving, get current date values from inputs
-            userSettings.dateSettings.start = document.getElementById('start-date').value;
-            userSettings.dateSettings.end = document.getElementById('end-date').value;
-            userSettings.dateSettings.interval = document.getElementById('interval-duration').value;
+            userSettings.archiveSchedule.start = document.getElementById('start-date').value;
+            userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
+            // End date is derived, so we don't save it directly, but save the components
             localStorage.setItem('pmAppSettings', JSON.stringify(userSettings));
         }
 
@@ -983,13 +973,14 @@
             document.getElementById('user-selection').classList.remove('hidden');
         };
 
-        window.loginAdmin = () => {
+        window.loginAdmin = async () => {
             const password = document.getElementById('admin-password').value;
             if (password === 'Karak@2025') {
                 currentUser = 'Admin';
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-interface').classList.remove('hidden');
                 initializeAdminUI();
+                await checkAndRunArchiveCycle(); // Run automated check on login
                 listenForTasks();
             } else {
                 showAlert('Incorrect password.');
@@ -1000,7 +991,7 @@
             currentUser = null;
             if (unsubscribe) unsubscribe();
             document.getElementById('user-interface').classList.add('hidden');
-            document.getElementById('admin-interface').classList.add('hidden');
+            document.getElementById('admin-interface').classList.remove('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('admin-password').value = '';
             renderUserButtons();
@@ -1009,89 +1000,54 @@
         // --- ADMIN UI & DATE LOGIC ---
         function initializeAdminUI() {
             renderUserEditor();
-            initializeAndProcessDates(); // NEW function call
             
             const startDateInput = document.getElementById('start-date');
-            const endDateInput = document.getElementById('end-date');
             const intervalSelect = document.getElementById('interval-duration');
 
-            // Add event listeners that save settings on change
-            intervalSelect.addEventListener('change', handleDateChange);
-            startDateInput.addEventListener('change', handleDateChange);
-            endDateInput.addEventListener('change', () => {
-                saveSettings();
-                displayAdminHistory();
-            });
-        }
+            const { start, interval } = userSettings.archiveSchedule;
 
-        function initializeAndProcessDates() {
-            const { dateSettings } = userSettings;
-            let startDate, endDate, interval;
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Normalize to start of day
-
-            if (dateSettings && dateSettings.start && dateSettings.end) {
-                // Dates are saved, load them
-                startDate = new Date(dateSettings.start + "T00:00:00");
-                endDate = new Date(dateSettings.end + "T00:00:00");
-                interval = dateSettings.interval;
-
-                // Check if the period has passed
-                if (today > endDate) {
-                    const intervalDuration = endDate.getTime() - startDate.getTime();
-                    // Shift the period to the one that contains today's date
-                    while (today > endDate) {
-                        startDate = new Date(endDate.getTime() + (24 * 60 * 60 * 1000)); // Day after old end date
-                        endDate = new Date(startDate.getTime() + intervalDuration);
-                    }
-                }
+            if (start && interval) {
+                startDateInput.value = start;
+                intervalSelect.value = interval;
             } else {
-                // No saved dates, set default to the last week
-                interval = 'weekly';
-                const weekAgo = new Date(today);
-                weekAgo.setDate(today.getDate() - 6);
-                startDate = weekAgo;
-                endDate = today;
+                // Set a default for the very first time
+                const today = new Date();
+                startDateInput.value = today.toISOString().split('T')[0];
+                intervalSelect.value = 'weekly';
             }
-
-            // Set the UI elements
-            document.getElementById('interval-duration').value = interval;
-            document.getElementById('start-date').value = startDate.toISOString().split('T')[0];
-            document.getElementById('end-date').value = endDate.toISOString().split('T')[0];
-
-            handleDateChange(); // Update UI and save settings
-        }
-
-        function handleDateChange() {
-            const interval = document.getElementById('interval-duration').value;
-            const startTimeInput = document.getElementById('start-time');
-            const endTimeInput = document.getElementById('end-time');
-            const startDateInput = document.getElementById('start-date');
-            const endDateInput = document.getElementById('end-date');
             
-            if (interval === 'time') {
-                startTimeInput.style.display = 'block';
-                endTimeInput.style.display = 'block';
-            } else {
-                startTimeInput.style.display = 'none';
-                endTimeInput.style.display = 'none';
-                let startDate = new Date(startDateInput.value + "T00:00:00");
-                if (isNaN(startDate.getTime())) return;
+            updateArchiveSchedule();
 
-                let endDate = new Date(startDate);
-                if (interval === 'daily') {
-                    // end date is the same as start date
-                } else if (interval === 'weekly') {
-                    endDate.setDate(startDate.getDate() + 6);
-                } else if (interval === 'monthly') {
-                    endDate.setMonth(startDate.getMonth() + 1);
-                    endDate.setDate(endDate.getDate() - 1);
-                }
-                endDateInput.value = endDate.toISOString().split('T')[0];
-            }
+            intervalSelect.addEventListener('change', updateArchiveSchedule);
+            startDateInput.addEventListener('change', updateArchiveSchedule);
+        }
+
+        function updateArchiveSchedule() {
+            const startDateInput = document.getElementById('start-date');
+            const intervalSelect = document.getElementById('interval-duration');
+            
+            let startDate = new Date(startDateInput.value + "T00:00:00");
+            if (isNaN(startDate.getTime())) return;
+
+            let endDate = calculateEndDate(startDate, intervalSelect.value);
+            
+            document.getElementById('end-date-display').textContent = endDate.toLocaleDateString();
+            
             saveSettings();
             displayAdminHistory();
+        }
+        
+        function calculateEndDate(startDate, interval) {
+            let endDate = new Date(startDate);
+            if (interval === 'daily') {
+                endDate.setDate(startDate.getDate());
+            } else if (interval === 'weekly') {
+                endDate.setDate(startDate.getDate() + 6);
+            } else if (interval === 'monthly') {
+                endDate.setMonth(startDate.getMonth() + 1);
+                endDate.setDate(endDate.getDate() - 1);
+            }
+            return endDate;
         }
         
         // --- UI & MODALS ---
@@ -1233,7 +1189,6 @@
         
         function displayAdminHistory() {
             const container = document.getElementById('admin-history');
-            const tasksToDisplay = getTasksForReport();
              let tableHTML = `<table class="min-w-full divide-y divide-gray-200">
                  <thead class="bg-gray-50"><tr>
                      <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Done By</th>
@@ -1242,7 +1197,7 @@
                      <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                      <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
                  </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
-            tasksToDisplay.forEach(task => {
+            allTasks.forEach(task => { // Show all tasks
                  tableHTML += `<tr>
                      <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
                      <td class="px-2 py-2 whitespace-nowrap">${task.zone || 'N/A'}</td>
@@ -1264,40 +1219,13 @@
             if (errors === 2) return { name: 'Yellow', text: 'Minor Issues Detected' };
             return { name: 'Green', text: 'OK' };
         }
-
-        function getTasksForReport() {
-            const startDateElem = document.getElementById('start-date');
-            const endDateElem = document.getElementById('end-date');
-            const startTimeElem = document.getElementById('start-time');
-            const endTimeElem = document.getElementById('end-time');
-            const interval = document.getElementById('interval-duration').value;
-
-            if (!startDateElem.value || !endDateElem.value) return [];
-            
-            let startDateTime = new Date(startDateElem.value + "T00:00:00");
-            let endDateTime = new Date(endDateElem.value + "T23:59:59");
-
-            if (interval === 'time') {
-                if(!startTimeElem.value || !endTimeElem.value) return [];
-                const [startHour, startMin] = startTimeElem.value.split(':');
-                startDateTime.setHours(startHour || 0, startMin || 0, 0, 0);
-                const [endHour, endMin] = endTimeElem.value.split(':');
-                endDateTime.setHours(endHour || 0, endMin || 0, 59, 999);
-            }
-           
-            return allTasks.filter(task => {
-                if (!task.timestamp) return false;
-                const taskDate = task.timestamp.toDate();
-                return taskDate >= startDateTime && taskDate <= endDateTime;
-            });
-        }
         
         const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Note", "Timestamp", "Color code"];
 
         window.exportToExcel = () => {
-            const tasksToExport = getTasksForReport();
+            const tasksToExport = allTasks; // Export all current data
             if (tasksToExport.length === 0) {
-                return showAlert("No data in the selected time frame to export.");
+                return showAlert("No data to export.");
             }
             let csvContent = reportHeaders.join(",") + "\r\n";
             tasksToExport.forEach(task => {
@@ -1327,7 +1255,7 @@
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", `pm_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute("download", `pm_report_all_${new Date().toISOString().split('T')[0]}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -1335,9 +1263,9 @@
         };
         
         window.exportToPDF = () => {
-            const tasksToExport = getTasksForReport();
+            const tasksToExport = allTasks; // Export all current data
             if(tasksToExport.length === 0) {
-                 return showAlert("No data in the selected time frame to export.");
+                 return showAlert("No data to export.");
             }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('landscape');
@@ -1376,7 +1304,7 @@
             doc.text("- Yellow: Minor Issues Detected (2 Errors)", 14, finalY + 20);
             doc.text("- Red: Major Issues Detected (3+ Errors)", 14, finalY + 25);
 
-            doc.save(`pm_report_${new Date().toISOString().split('T')[0]}.pdf`);
+            doc.save(`pm_report_all_${new Date().toISOString().split('T')[0]}.pdf`);
         };
         
         // --- DATA DELETION AND ARCHIVING FUNCTIONS ---
@@ -1410,33 +1338,47 @@
             }
         };
         
-        window.archivePeriodData = () => {
-            const tasksToArchive = getTasksForReport();
-            if (tasksToArchive.length === 0) {
-                return showAlert("No data in the selected period to archive.", "Info");
-            }
-            
-            document.getElementById('confirm-clear-message').innerHTML = `Are you sure you want to delete the <strong class="text-yellow-700">${tasksToArchive.length}</strong> records in the selected period? This is permanent.`;
-            const yesButton = document.getElementById('confirm-clear-button-yes');
-            yesButton.onclick = () => deletePeriodDataConfirmed(tasksToArchive);
-            yesButton.innerText = "Yes, Archive";
-            document.getElementById('confirm-clear-modal').classList.remove('hidden');
+        window.runCycleManually = async () => {
+            await checkAndRunArchiveCycle(true); // true = force run
         }
 
-        async function deletePeriodDataConfirmed(tasksToDelete) {
-            closeConfirmClearModal();
-            showAlert(`Archiving ${tasksToDelete.length} records...`, 'Processing');
-            try {
-                const batch = writeBatch(db);
-                tasksToDelete.forEach(task => {
-                    const docRef = doc(db, "pm_tasks", task.id);
-                    batch.delete(docRef);
-                });
-                await batch.commit();
-                showAlert(`Successfully archived ${tasksToDelete.length} records.`, "Success");
-            } catch (error) {
-                console.error("Error archiving period data: ", error);
-                showAlert("Failed to archive the data.", "Error");
+        async function checkAndRunArchiveCycle(forceRun = false) {
+            const { archiveSchedule } = userSettings;
+            if (!archiveSchedule.start || !archiveSchedule.interval) {
+                return; // Not configured yet
+            }
+
+            let startDate = new Date(archiveSchedule.start + "T00:00:00");
+            let endDate = calculateEndDate(startDate, archiveSchedule.interval);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            if (forceRun || today > endDate) {
+                showAlert('Archive cycle running...', 'Processing');
+
+                // Find tasks within the expired period
+                const startTimestamp = Timestamp.fromDate(startDate);
+                const endTimestamp = Timestamp.fromDate(new Date(endDate.getTime() + (24*60*60*1000 - 1))); // End of day
+                const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", startTimestamp), where("timestamp", "<=", endTimestamp));
+                
+                const snapshot = await getDocs(q);
+                const tasksToDelete = snapshot.docs;
+
+                if (tasksToDelete.length > 0) {
+                    const batch = writeBatch(db);
+                    tasksToDelete.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                }
+
+                // Set the new schedule to start the day after the old one ended
+                const newStartDate = new Date(endDate.getTime() + (24 * 60 * 60 * 1000));
+                document.getElementById('start-date').value = newStartDate.toISOString().split('T')[0];
+                updateArchiveSchedule(); // This will calculate new end date and save settings
+
+                showAlert(`Archive cycle complete. ${tasksToDelete.length} records from the previous period were deleted. The new cycle has been set.`, 'Success');
+
             }
         }
 
