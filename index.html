@@ -34,7 +34,8 @@
                     <button onclick="showAdminLogin()" class="mt-6 text-gray-600 hover:text-blue-600 font-medium">Login as Admin</button>
                 </div>
                 <div id="admin-login" class="hidden">
-                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Admin Login</h2>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Admin Login</h2>
+                    <p class="text-md text-gray-500 mb-4">Eng. Osama Al-Samirat</p>
                     <input type="password" id="admin-password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4">
                     <button onclick="loginAdmin()" class="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-red-700 transition">Login</button>
                     <button onclick="showUserSelection()" class="mt-4 text-gray-600 hover:text-blue-600 font-medium">Back to User Selection</button>
@@ -276,7 +277,6 @@
             ],
             archiveSchedule: {
                 start: null,
-                end: null,
                 interval: 'weekly'
             }
         };
@@ -915,7 +915,6 @@
         function saveSettings() {
             userSettings.archiveSchedule.start = document.getElementById('start-date').value;
             userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
-            // End date is derived, so we don't save it directly, but save the components
             localStorage.setItem('pmAppSettings', JSON.stringify(userSettings));
         }
 
@@ -980,7 +979,7 @@
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-interface').classList.remove('hidden');
                 initializeAdminUI();
-                await checkAndRunArchiveCycle(); // Run automated check on login
+                await checkAndRunArchiveCycle();
                 listenForTasks();
             } else {
                 showAlert('Incorrect password.');
@@ -991,19 +990,19 @@
             currentUser = null;
             if (unsubscribe) unsubscribe();
             document.getElementById('user-interface').classList.add('hidden');
-            document.getElementById('admin-interface').classList.remove('hidden');
+            document.getElementById('admin-interface').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('admin-password').value = '';
             renderUserButtons();
         };
         
-        // --- ADMIN UI & DATE LOGIC ---
+        // --- ADMIN UI & AUTOMATED DATE LOGIC ---
         function initializeAdminUI() {
             renderUserEditor();
             
             const startDateInput = document.getElementById('start-date');
             const intervalSelect = document.getElementById('interval-duration');
-
+            
             const { start, interval } = userSettings.archiveSchedule;
 
             if (start && interval) {
@@ -1011,18 +1010,17 @@
                 intervalSelect.value = interval;
             } else {
                 // Set a default for the very first time
-                const today = new Date();
-                startDateInput.value = today.toISOString().split('T')[0];
+                startDateInput.value = new Date().toISOString().split('T')[0];
                 intervalSelect.value = 'weekly';
             }
             
-            updateArchiveSchedule();
+            updateArchiveScheduleDisplay();
 
-            intervalSelect.addEventListener('change', updateArchiveSchedule);
-            startDateInput.addEventListener('change', updateArchiveSchedule);
+            intervalSelect.addEventListener('change', updateArchiveScheduleDisplay);
+            startDateInput.addEventListener('change', updateArchiveScheduleDisplay);
         }
 
-        function updateArchiveSchedule() {
+        function updateArchiveScheduleDisplay() {
             const startDateInput = document.getElementById('start-date');
             const intervalSelect = document.getElementById('interval-duration');
             
@@ -1034,7 +1032,6 @@
             document.getElementById('end-date-display').textContent = endDate.toLocaleDateString();
             
             saveSettings();
-            displayAdminHistory();
         }
         
         function calculateEndDate(startDate, interval) {
@@ -1049,7 +1046,7 @@
             }
             return endDate;
         }
-        
+
         // --- UI & MODALS ---
         window.showAlert = (message, title = 'Alert') => {
             document.getElementById('alert-title').innerText = title;
@@ -1223,7 +1220,7 @@
         const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Note", "Timestamp", "Color code"];
 
         window.exportToExcel = () => {
-            const tasksToExport = allTasks; // Export all current data
+            const tasksToExport = allTasks;
             if (tasksToExport.length === 0) {
                 return showAlert("No data to export.");
             }
@@ -1263,7 +1260,7 @@
         };
         
         window.exportToPDF = () => {
-            const tasksToExport = allTasks; // Export all current data
+            const tasksToExport = allTasks;
             if(tasksToExport.length === 0) {
                  return showAlert("No data to export.");
             }
@@ -1337,28 +1334,32 @@
                 showAlert("Failed to delete all data.", "Error");
             }
         };
-        
-        window.runCycleManually = async () => {
-            await checkAndRunArchiveCycle(true); // true = force run
-        }
 
+        window.runCycleManually = async () => {
+             await checkAndRunArchiveCycle(true); // true = force run now
+        }
+        
         async function checkAndRunArchiveCycle(forceRun = false) {
             const { archiveSchedule } = userSettings;
             if (!archiveSchedule.start || !archiveSchedule.interval) {
-                return; // Not configured yet
+                console.log("Archive schedule not configured. Skipping cycle.");
+                return;
             }
 
             let startDate = new Date(archiveSchedule.start + "T00:00:00");
             let endDate = calculateEndDate(startDate, archiveSchedule.interval);
             const today = new Date();
-            today.setHours(0,0,0,0);
+            today.setHours(0,0,0,0); // Normalize to start of day for comparison
             
             if (forceRun || today > endDate) {
-                showAlert('Archive cycle running...', 'Processing');
+                const cycleStartDate = new Date(startDate);
+                const cycleEndDate = new Date(endDate);
 
-                // Find tasks within the expired period
-                const startTimestamp = Timestamp.fromDate(startDate);
-                const endTimestamp = Timestamp.fromDate(new Date(endDate.getTime() + (24*60*60*1000 - 1))); // End of day
+                // Run the deletion for the completed period
+                showAlert('Archive cycle running...', 'Processing');
+                
+                const startTimestamp = Timestamp.fromDate(cycleStartDate);
+                const endTimestamp = Timestamp.fromDate(new Date(cycleEndDate.getTime() + (24*60*60*1000 - 1))); // End of day
                 const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", startTimestamp), where("timestamp", "<=", endTimestamp));
                 
                 const snapshot = await getDocs(q);
@@ -1372,13 +1373,14 @@
                     await batch.commit();
                 }
 
-                // Set the new schedule to start the day after the old one ended
-                const newStartDate = new Date(endDate.getTime() + (24 * 60 * 60 * 1000));
+                // Automatically set the schedule for the next period
+                const newStartDate = new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000));
                 document.getElementById('start-date').value = newStartDate.toISOString().split('T')[0];
-                updateArchiveSchedule(); // This will calculate new end date and save settings
+                updateArchiveScheduleDisplay(); // This calculates new end date and saves settings
 
-                showAlert(`Archive cycle complete. ${tasksToDelete.length} records from the previous period were deleted. The new cycle has been set.`, 'Success');
-
+                showAlert(`Archive cycle complete. ${tasksToDelete.length} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted. The new cycle has been set.`, 'Success');
+            } else if (forceRun) {
+                showAlert(`The current archive period has not ended yet. The cycle will run after ${endDate.toLocaleDateString()}.`, 'Info');
             }
         }
 
