@@ -115,13 +115,6 @@
                         </div>
 
                         <div class="space-y-6 border-t pt-6">
-                            <div id="pm-override-requests-section" class="space-y-4 border p-4 rounded-lg">
-                                <h3 class="font-semibold text-lg text-gray-700">PM Override Requests <span id="request-count" class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full ml-2 hidden">0</span></h3>
-                                <div id="pm-override-requests-container" class="space-y-3">
-                                    <p class="text-gray-500">No pending requests.</p>
-                                </div>
-                            </div>
-
                             <div id="data-management" class="space-y-4 border p-4 rounded-lg">
                                 <h3 class="font-semibold text-lg text-gray-700">Automated Archiving Schedule</h3>
                                 <p class="text-sm text-gray-600">Set the schedule for automatically deleting old PM records. This cycle runs when the admin logs in.</p>
@@ -238,17 +231,6 @@
                 </div>
             </div>
         </div>
-
-        <div id="pm-warning-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
-                <h2 class="text-xl font-bold text-yellow-600 mb-4">Warning: Recent PM Detected!</h2>
-                <p id="pm-warning-message" class="text-gray-700 mb-6"></p>
-                <div class="flex justify-center space-x-4">
-                    <button onclick="cancelPmOverride()" class="bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-600 transition">Cancel</button>
-                    <button onclick="requestPmOverride()" class="bg-red-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-red-700 transition">Request Admin Override</button>
-                </div>
-            </div>
-        </div>
         
         <div id="alert-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
             <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
@@ -273,7 +255,7 @@
 
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- FIREBASE CONFIG ---
     const firebaseConfig = {
@@ -297,9 +279,8 @@
     let selectedEquipment = null;
     let equipmentData = { HLP: [], SCREEN: [], COMPACTION: [] };
     let allTasks = [];
-    let unsubscribePmTasks = null;
-    let unsubscribeUserSettings = null;
-    let unsubscribePmRequests = null; // New unsubscribe for PM requests listener
+    let unsubscribePmTasks = null; // Renamed for clarity
+    let unsubscribeUserSettings = null; // New unsubscribe for user settings listener
 
     // Default user settings - will be used if no settings exist in Firestore
     const defaultUserSettings = {
@@ -310,14 +291,11 @@
             { id: 'user4', name: 'User 4', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700' }
         ],
         archiveSchedule: {
-            start: null,
+            start: null, // Will be set to today's date if not present
             interval: 'weekly'
         }
     };
     let userSettings = { ...defaultUserSettings }; // Start with a copy of defaults
-
-    // Variable to hold the pending PM override request for the current user
-    let pendingPmOverrideRequest = null;
 
     // --- EMBEDDED CSV DATA ---
     const hlpCsvData = `TAG number,Equipment Description
@@ -940,7 +918,7 @@
         }
     }
 
-    // --- USER AND SCHEDULE SETTINGS (FIREBASE-BACKED) ---
+    // --- USER AND SCHEDULE SETTINGS (NOW FIREBASE-BACKED) ---
     async function loadSettings() {
         const settingsDocRef = doc(db, "app_settings", "global_settings");
         try {
@@ -948,22 +926,27 @@
 
             if (docSnap.exists()) {
                 const firebaseSettings = docSnap.data();
+                // Merge with defaults to ensure all expected properties exist,
+                // but prioritize Firebase values if they exist.
                 userSettings.users = firebaseSettings.users && Array.isArray(firebaseSettings.users) ? firebaseSettings.users.map(fbUser => {
+                    // Find corresponding default user to maintain color/hover if not in FB
                     const defaultUser = defaultUserSettings.users.find(du => du.id === fbUser.id);
-                    return { ...defaultUser, ...fbUser };
+                    return { ...defaultUser, ...fbUser }; // Merge default with Firebase data
                 }) : defaultUserSettings.users;
                 userSettings.archiveSchedule = firebaseSettings.archiveSchedule || defaultUserSettings.archiveSchedule;
 
+                // Ensure start date is set if null in Firestore
                 if (!userSettings.archiveSchedule.start) {
                     userSettings.archiveSchedule.start = new Date().toISOString().split('T')[0];
-                    await saveSettings();
+                    await saveSettings(); // Save updated start date to Firestore
                 }
 
             } else {
                 console.warn("No 'global_settings' document found in Firestore. Creating with default settings.");
+                // Set the default start date to today
                 defaultUserSettings.archiveSchedule.start = new Date().toISOString().split('T')[0];
-                userSettings = { ...defaultUserSettings };
-                await setDoc(settingsDocRef, userSettings);
+                userSettings = { ...defaultUserSettings }; // Use the updated default
+                await setDoc(settingsDocRef, userSettings); // Save default settings to Firestore
             }
             renderUserButtons();
         } catch (error) {
@@ -973,6 +956,7 @@
     }
 
     async function saveSettings() {
+        // Ensure the global userSettings object reflects the current UI state for archiving
         userSettings.archiveSchedule.start = document.getElementById('start-date')?.value || userSettings.archiveSchedule.start;
         userSettings.archiveSchedule.interval = document.getElementById('interval-duration')?.value || userSettings.archiveSchedule.interval;
 
@@ -987,13 +971,14 @@
     }
 
     window.saveUsers = async () => {
+        // Update userSettings object from UI input fields
         userSettings.users.forEach((user, index) => {
             const nameInput = document.getElementById(`user-name-edit-${index}`);
             const passwordInput = document.getElementById(`user-password-edit-${index}`);
             if (nameInput) user.name = nameInput.value;
             if (passwordInput) user.password = passwordInput.value;
         });
-        await saveSettings();
+        await saveSettings(); // Save the updated userSettings to Firestore
         renderUserButtons();
         showAlert('User names and passwords saved successfully!', 'Success');
     };
@@ -1047,12 +1032,12 @@
             closeUserPasswordModal();
             return;
         }
+        // Retrieve the latest user details from the synchronized userSettings
         const latestUser = userSettings.users.find(u => u.id === userForLogin.id);
         if (latestUser && password === latestUser.password) {
             const userNameToLogin = latestUser.name;
             closeUserPasswordModal();
             showUserDashboard(userNameToLogin);
-            listenForPmRequests(); // Start listening for PM requests for users
         } else {
             showAlert('Incorrect password.');
             document.getElementById('user-password').value = '';
@@ -1065,7 +1050,7 @@
         document.getElementById('current-user').innerText = `User: ${currentUser}`;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('user-interface').classList.remove('hidden');
-        listenForTasks();
+        listenForTasks(); // Start listening for PM tasks
     }
 
     window.showAdminLogin = () => {
@@ -1081,15 +1066,14 @@
 
     window.loginAdmin = async () => {
         const password = document.getElementById('admin-password').value;
-        if (password === 'Karak@2025') {
+        if (password === 'Karak@2025') { // Admin password remains hardcoded
             currentUser = 'Admin';
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('admin-interface').classList.remove('hidden');
             initializeAdminUI();
-            await checkAndRunArchiveCycle();
-            listenForTasks();
-            listenForUserSettingsChanges();
-            listenForPmRequests(); // Admin also listens for PM requests
+            await checkAndRunArchiveCycle(); // Run archive cycle check on admin login
+            listenForTasks(); // Start listening for PM tasks
+            listenForUserSettingsChanges(); // Start listening for user settings changes for admin
         } else {
             showAlert('Incorrect password.');
             document.getElementById('admin-password').value = '';
@@ -1099,31 +1083,32 @@
     window.logout = () => {
         currentUser = null;
         userForLogin = null;
-        if (unsubscribePmTasks) unsubscribePmTasks();
-        if (unsubscribeUserSettings) unsubscribeUserSettings();
-        if (unsubscribePmRequests) unsubscribePmRequests(); // Stop listening for requests
+        if (unsubscribePmTasks) unsubscribePmTasks(); // Stop listening for PM tasks
+        if (unsubscribeUserSettings) unsubscribeUserSettings(); // Stop listening for user settings
         document.getElementById('user-interface').classList.add('hidden');
         document.getElementById('admin-interface').classList.add('hidden');
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('admin-password').value = '';
-        renderUserButtons();
+        renderUserButtons(); // Re-render user buttons to reflect latest settings
     };
 
     // --- ADMIN UI & AUTOMATED DATE LOGIC ---
     function initializeAdminUI() {
-        renderUserEditor();
+        renderUserEditor(); // Render the user editor based on current userSettings
         const startDateInput = document.getElementById('start-date');
         const intervalSelect = document.getElementById('interval-duration');
-        const { start, interval } = userSettings.archiveSchedule;
+        const { start, interval } = userSettings.archiveSchedule; // Use the loaded userSettings
 
         if (start && interval) {
             startDateInput.value = start;
             intervalSelect.value = interval;
         } else {
+            // This case should ideally not happen if loadSettings works correctly,
+            // but as a fallback, ensure the UI elements are initialized.
             startDateInput.value = new Date().toISOString().split('T')[0];
             intervalSelect.value = 'weekly';
         }
-        updateArchiveScheduleDisplay();
+        updateArchiveScheduleDisplay(); // Update display immediately
         intervalSelect.addEventListener('change', updateArchiveScheduleDisplay);
         startDateInput.addEventListener('change', updateArchiveScheduleDisplay);
     }
@@ -1135,12 +1120,17 @@
         if (isNaN(startDate.getTime())) return;
         let endDate = calculateEndDate(startDate, intervalSelect.value);
         document.getElementById('end-date-display').textContent = endDate.toLocaleDateString();
+        // The saveSettings call for archive schedule updates happens in saveSettings,
+        // which is triggered by button clicks, not every UI change here.
+        // However, if the user navigates away, these changes won't persist until explicitly saved.
+        // For simplicity, we are not calling saveSettings on every UI change for the schedule.
+        // It's saved when runCycleManually is called, or when other settings are saved.
     }
 
     function calculateEndDate(startDate, interval) {
         let endDate = new Date(startDate);
         if (interval === 'daily') {
-            endDate.setDate(startDate.getDate());
+            endDate.setDate(startDate.getDate()); // No change for daily to represent end of day
         } else if (interval === 'weekly') {
             endDate.setDate(startDate.getDate() + 6);
         } else if (interval === 'monthly') {
@@ -1150,6 +1140,7 @@
         return endDate;
     }
 
+    // Listener for user settings changes (for admin interface)
     function listenForUserSettingsChanges() {
         const settingsDocRef = doc(db, "app_settings", "global_settings");
         unsubscribeUserSettings = onSnapshot(settingsDocRef, (docSnap) => {
@@ -1161,9 +1152,9 @@
                 }) : defaultUserSettings.users;
                 userSettings.archiveSchedule = firebaseSettings.archiveSchedule || defaultUserSettings.archiveSchedule;
 
-                renderUserEditor();
-                renderUserButtons();
-                updateArchiveScheduleDisplay();
+                renderUserEditor(); // Re-render user editor to show latest data
+                renderUserButtons(); // Re-render login buttons if names/passwords change
+                updateArchiveScheduleDisplay(); // Update the archive schedule display
             } else {
                 console.warn("Global settings document no longer exists in Firestore.");
             }
@@ -1173,155 +1164,68 @@
         });
     }
 
-    // --- PM OVERRIDE REQUESTS FEATURE ---
-    window.showPmWarningModal = (prevPm) => {
-        const message = `This equipment (${prevPm.tag}) had PM done by **${prevPm.user}** on **${prevPm.timestamp.toDate().toLocaleString()}**.`;
-        document.getElementById('pm-warning-message').innerHTML = message;
-        document.getElementById('pm-warning-modal').classList.remove('hidden');
+    // --- UI & MODALS ---
+    window.showAlert = (message, title = 'Alert') => {
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-message').innerText = message;
+        document.getElementById('alert-modal').classList.remove('hidden');
     };
 
-    window.closePmWarningModal = () => {
-        document.getElementById('pm-warning-modal').classList.add('hidden');
-        selectedEquipment = null; // Clear selected equipment if user cancels
+    window.closeAlertModal = () => document.getElementById('alert-modal').classList.add('hidden');
+
+    window.selectZone = (zone) => {
+        currentZone = zone;
+        document.getElementById('equipment-modal-title').innerText = `Select Equipment for ${zone}`;
+        populateEquipmentTable(zone);
+        document.getElementById('equipment-modal').classList.remove('hidden');
+        document.getElementById('tag-search').focus();
     };
 
-    window.cancelPmOverride = () => {
-        closePmWarningModal();
-        closeEquipmentModal(); // Go back to equipment selection
+    window.closeEquipmentModal = () => {
+        document.getElementById('equipment-modal').classList.add('hidden');
+        document.getElementById('tag-search').value = '';
     };
 
-    window.requestPmOverride = async () => {
-        closePmWarningModal();
-        showAlert('Sending override request to Admin...', 'Requesting Permission');
-        try {
-            const request = {
-                requester: currentUser,
-                zone: currentZone,
-                tag: selectedEquipment.tag,
-                description: selectedEquipment.description,
-                requestTime: serverTimestamp(),
-                status: 'pending' // pending, approved, rejected
-            };
-            const docRef = await addDoc(collection(db, "pm_override_requests"), request);
-            // Store the request ID to check its status later
-            pendingPmOverrideRequest = { id: docRef.id, ...request };
-            showAlert(`Request sent for ${selectedEquipment.tag}. Waiting for Admin approval.`, 'Request Sent');
-        } catch (error) {
-            console.error("Error sending PM override request:", error);
-            showAlert('Failed to send override request.', 'Error');
-        }
+    window.selectEquipment = (tag, description) => {
+        selectedEquipment = { tag, description };
+        document.getElementById('pm-tag-number').innerText = tag;
+        document.getElementById('pm-equipment-description').innerText = description;
+        closeEquipmentModal();
+        document.getElementById('pm-modal').classList.remove('hidden');
     };
 
-    function listenForPmRequests() {
-        const q = query(collection(db, "pm_override_requests"), orderBy("requestTime", "desc"));
-        unsubscribePmRequests = onSnapshot(q, (snapshot) => {
-            const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            if (currentUser === 'Admin') {
-                displayAdminPmRequests(requests);
-            } else {
-                // For regular users, check if their pending request has been actioned
-                const userRequest = requests.find(req => req.id === pendingPmOverrideRequest?.id && req.requester === currentUser);
-                if (userRequest && userRequest.status !== 'pending') {
-                    if (userRequest.status === 'approved') {
-                        showAlert(`Admin approved your PM request for ${userRequest.tag}! You can now proceed.`, 'Request Approved');
-                        // Automatically open PM modal once approved
-                        selectEquipment(userRequest.tag, userRequest.description);
-                    } else if (userRequest.status === 'rejected') {
-                        showAlert(`Admin rejected your PM request for ${userRequest.tag}.`, 'Request Rejected');
-                    }
-                    pendingPmOverrideRequest = null; // Clear pending request after action
-                }
-            }
-        }, (error) => {
-            console.error("Firebase PM requests snapshot error: ", error);
-            showAlert("Error syncing PM requests from database.", "Database Error");
-        });
-    }
+    window.closePmModal = () => {
+        document.getElementById('pm-modal').classList.add('hidden');
+        const form = document.getElementById('pm-modal');
+        form.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+        form.querySelector('textarea').value = '';
+    };
 
-    function displayAdminPmRequests(requests) {
-        const container = document.getElementById('pm-override-requests-container');
-        const requestCountSpan = document.getElementById('request-count');
-        container.innerHTML = '';
-        const pendingRequests = requests.filter(req => req.status === 'pending');
-
-        if (pendingRequests.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">No pending requests.</p>';
-            requestCountSpan.classList.add('hidden');
-        } else {
-            requestCountSpan.textContent = pendingRequests.length;
-            requestCountSpan.classList.remove('hidden');
-            pendingRequests.forEach(request => {
-                const requestCard = document.createElement('div');
-                requestCard.className = 'bg-white p-4 rounded-lg shadow border border-yellow-400';
-                requestCard.innerHTML = `
-                    <p class="font-semibold text-lg">Request from: ${request.requester}</p>
-                    <p class="text-gray-700">Equipment: ${request.tag} - ${request.description}</p>
-                    <p class="text-sm text-gray-500">Requested at: ${request.requestTime ? request.requestTime.toDate().toLocaleString() : 'Just now'}</p>
-                    <div class="mt-3 flex space-x-2">
-                        <button onclick="handlePmRequest('${request.id}', 'approved')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm">Approve</button>
-                        <button onclick="handlePmRequest('${request.id}', 'rejected')" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm">Reject</button>
-                    </div>
+    function populateEquipmentTable(zone) {
+        const tableBody = document.getElementById('equipment-table-body');
+        const searchInput = document.getElementById('tag-search');
+        const renderTable = (filter = '') => {
+            tableBody.innerHTML = '';
+            const filteredData = equipmentData[zone].filter(eq =>
+                eq.tag.toLowerCase().includes(filter.toLowerCase()) ||
+                eq.description.toLowerCase().includes(filter.toLowerCase())
+            );
+            filteredData.forEach(({ tag, description }) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="#" onclick="event.preventDefault(); selectEquipment('${tag}', \`${description.replace(/'/g, "\\'")}\`)" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold">${tag}</a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${description}</td>
                 `;
-                container.appendChild(requestCard);
+                tableBody.appendChild(row);
             });
         }
+        searchInput.onkeyup = () => renderTable(searchInput.value);
+        renderTable();
     }
 
-    window.handlePmRequest = async (requestId, status) => {
-        showAlert('Processing request...', 'Please Wait');
-        try {
-            await setDoc(doc(db, "pm_override_requests", requestId), { status: status, processedBy: currentUser, processedTime: serverTimestamp() }, { merge: true });
-            // After updating status, the onSnapshot listener will re-render
-            console.log(`Request ${requestId} ${status}.`);
-        } catch (error) {
-            console.error(`Error processing request ${requestId}:`, error);
-            showAlert(`Failed to ${status} request.`, 'Error');
-        }
-    };
-
-    // Modify selectEquipment to include the duplicate PM check
-    window.selectEquipment = async (tag, description) => {
-        selectedEquipment = { tag, description };
-        const oneDayAgo = Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000)); // Check for PMs in last 24 hours
-
-        // Query for recent PMs for this equipment
-        const q = query(
-            collection(db, "pm_tasks"),
-            where("tag", "==", tag),
-            where("timestamp", ">=", oneDayAgo),
-            orderBy("timestamp", "desc")
-        );
-
-        try {
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                const latestPm = snapshot.docs[0].data();
-                // Check if the current user is the one who did the last PM
-                if (latestPm.user === currentUser) {
-                     // If it's the same user, just open the PM modal
-                    document.getElementById('pm-tag-number').innerText = tag;
-                    document.getElementById('pm-equipment-description').innerText = description;
-                    closeEquipmentModal();
-                    document.getElementById('pm-modal').classList.remove('hidden');
-                } else {
-                    // It's a different user, show warning
-                    showPmWarningModal(latestPm);
-                }
-            } else {
-                // No recent PMs, proceed to PM modal
-                document.getElementById('pm-tag-number').innerText = tag;
-                document.getElementById('pm-equipment-description').innerText = description;
-                closeEquipmentModal();
-                document.getElementById('pm-modal').classList.remove('hidden');
-            }
-        } catch (error) {
-            console.error("Error checking for duplicate PM:", error);
-            showAlert("Failed to check equipment history. Please try again.", "Error");
-        }
-    };
-
-
-    // --- DATA HANDLING AND SUBMISSION (Original, no changes needed for this feature) ---
+    // --- DATA HANDLING AND SUBMISSION ---
     window.submitPmTask = async () => {
         const task = {
             user: currentUser,
@@ -1362,12 +1266,12 @@
         });
     }
 
-    // --- DISPLAY FUNCTIONS (Original, with minor adjustment to displayRecentActivities) ---
+    // --- DISPLAY FUNCTIONS ---
     function displayRecentActivities(tasks) {
         const container = document.getElementById('recent-activities');
         container.innerHTML = '';
-        const userTasks = tasks.filter(task => task.user === currentUser);
-        userTasks.slice(0, 6).forEach(task => {
+        const userTasks = tasks.filter(task => task.user === currentUser); // Filter by current user
+        userTasks.slice(0, 6).forEach(task => { // Show recent 6 for the user
             const card = document.createElement('div');
             card.className = 'bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500';
             card.innerHTML = `
@@ -1421,7 +1325,7 @@
         container.innerHTML = tableHTML;
     }
 
-    // --- REPORTING & ADMIN FEATURES (Original) ---
+    // --- REPORTING & ADMIN FEATURES ---
     function getTaskColorCode(task) {
         const errors = [task.sound, task.vibration, task.heat, task.motor_umbrella, task.status]
             .filter(v => v === 'Error').length;
@@ -1512,7 +1416,7 @@
         doc.save(`pm_report_all_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
-    // --- DATA DELETION AND ARCHIVING FUNCTIONS (Original) ---
+    // --- DATA DELETION AND ARCHIVING FUNCTIONS ---
     window.closeConfirmClearModal = () => document.getElementById('confirm-clear-modal').classList.add('hidden');
 
     window.confirmClearAllData = () => {
@@ -1549,11 +1453,12 @@
     }
 
     async function checkAndRunArchiveCycle(forceRun = false) {
+        // Ensure userSettings.archiveSchedule is up-to-date from UI fields if changed
         userSettings.archiveSchedule.start = document.getElementById('start-date').value;
         userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
-        await saveSettings();
+        await saveSettings(); // Persist any UI changes to schedule before running
 
-        const { archiveSchedule } = userSettings;
+        const { archiveSchedule } = userSettings; // Get the latest schedule from userSettings
         if (!archiveSchedule.start || !archiveSchedule.interval) {
             console.log("Archive schedule not configured. Skipping cycle.");
             return;
@@ -1568,6 +1473,7 @@
             const cycleStartDate = new Date(startDate);
             const cycleEndDate = new Date(endDate);
             showAlert('Archive cycle running...', 'Processing');
+            // Ensure endTimestamp includes the entire end day
             const endTimestamp = Timestamp.fromDate(new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000) - 1));
             const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", Timestamp.fromDate(cycleStartDate)), where("timestamp", "<=", endTimestamp));
 
@@ -1583,9 +1489,10 @@
                     await batch.commit();
                 }
 
+                // Update the start date for the next cycle
                 const newStartDate = new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000));
                 userSettings.archiveSchedule.start = newStartDate.toISOString().split('T')[0];
-                await saveSettings();
+                await saveSettings(); // Save the new archive start date to Firestore
 
                 updateArchiveScheduleDisplay();
                 showAlert(`Archive cycle complete. ${tasksToDelete.length} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted. The new cycle has been set.`, 'Success');
@@ -1602,7 +1509,7 @@
     // --- INITIALIZATION ---
     window.onload = async () => {
         loadEquipmentData();
-        await loadSettings();
+        await loadSettings(); // Ensure settings are loaded from Firebase before rendering buttons
         console.log("Application initialized successfully.");
     };
     </script>
