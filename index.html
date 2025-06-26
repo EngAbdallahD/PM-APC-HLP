@@ -44,6 +44,17 @@
              <p class="text-white text-center mt-4 text-sm font-light absolute bottom-4">Design by: Eng.Abdallah Dmour</p>
         </div>
 
+        <div id="user-password-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+                <h2 class="text-xl font-bold mb-4">Login as <span id="user-password-title" class="text-blue-600"></span></h2>
+                <input type="password" id="user-password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4">
+                <div class="flex justify-center space-x-4">
+                    <button onclick="closeUserPasswordModal()" class="bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-600 transition">Cancel</button>
+                    <button onclick="loginUserWithPassword()" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition">Login</button>
+                </div>
+            </div>
+        </div>
+
         <div id="user-interface" class="hidden h-full flex flex-col">
             <header class="bg-white shadow-md p-4 flex justify-between items-center">
                 <div class="flex items-center">
@@ -91,7 +102,7 @@
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h2 class="text-2xl font-bold text-gray-800 mb-4">Live PM Activities</h2>
                         <div id="admin-live-activities" class="space-y-4 h-96 overflow-y-auto">
-                           </div>
+                            </div>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
                         <div>
@@ -132,7 +143,7 @@
 
                              <div id="user-management" class="space-y-4 border p-4 rounded-lg">
                                 <h3 class="font-semibold text-lg text-gray-700">Manage Users</h3>
-                                <div id="user-editor-container" class="space-y-2">
+                                <div id="user-editor-container" class="space-y-4">
                                     </div>
                                 <button onclick="saveUsers()" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Save Users</button>
                             </div>
@@ -243,46 +254,47 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- FIREBASE CONFIG ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAy8Bymqb-VdO76OKv-MIynnGtho14X9yc",
-            authDomain: "pm-apc-web.firebaseapp.com",
-            projectId: "pm-apc-web",
-            storageBucket: "pm-apc-web.firebasestorage.app",
-            messagingSenderId: "420385829693",
-            appId: "1:420385829693:web:966de336767aa6b0950b54",
-            measurementId: "G-2YEVWNLGHP"
-        };
+    // --- FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyAy8Bymqb-VdO76OKv-MIynnGtho14X9yc",
+        authDomain: "pm-apc-web.firebaseapp.com",
+        projectId: "pm-apc-web",
+        storageBucket: "pm-apc-web.firebasestorage.app",
+        messagingSenderId: "420385829693",
+        appId: "1:420385829693:web:966de336767aa6b0950b54",
+        measurementId: "G-2YEVWNLGHP"
+    };
 
-        // --- INITIALIZE FIREBASE ---
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    // --- INITIALIZE FIREBASE ---
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        // --- GLOBAL STATE ---
-        let currentUser = null;
-        let currentZone = null;
-        let selectedEquipment = null;
-        let equipmentData = { HLP: [], SCREEN: [], COMPACTION: [] };
-        let allTasks = [];
-        let unsubscribe = null;
-        let userSettings = {
-            users: [
-                { id: 'user1', name: 'Khaled', color: 'bg-blue-600', hover: 'hover:bg-blue-700' },
-                { id: 'user2', name: 'Mohammed', color: 'bg-blue-600', hover: 'hover:bg-blue-700' },
-                { id: 'user3', name: 'Moatasem', color: 'bg-green-600', hover: 'hover:bg-green-700' },
-                { id: 'user4', name: 'User 4', color: 'bg-green-600', hover: 'hover:bg-green-700' }
-            ],
-            archiveSchedule: {
-                start: null,
-                interval: 'weekly'
-            }
-        };
+    // --- GLOBAL STATE ---
+    let currentUser = null;
+    let userForLogin = null;
+    let currentZone = null;
+    let selectedEquipment = null;
+    let equipmentData = { HLP: [], SCREEN: [], COMPACTION: [] };
+    let allTasks = [];
+    let unsubscribe = null;
+    let userSettings = {
+        users: [
+            { id: 'user1', name: 'Khaled', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700' },
+            { id: 'user2', name: 'Mohammed', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700' },
+            { id: 'user3', name: 'Moatasem', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700' },
+            { id: 'user4', name: 'User 4', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700' }
+        ],
+        archiveSchedule: {
+            start: null,
+            interval: 'weekly'
+        }
+    };
 
-        // --- EMBEDDED CSV DATA ---
-        const hlpCsvData = `TAG number,Equipment Description
+    // --- EMBEDDED CSV DATA ---
+    const hlpCsvData = `TAG number,Equipment Description
 13-01-015,1ST STAGE DECOMPOSTION THICKNER DISCHARGE PUMP #15
 13-01-016,1ST STAGE DECOMPOSTION THICKNER DISCHARGE PUMP #16
 13-01-017 (VFD),CARNALITE RE-PULP TANK PUMP #17
@@ -481,7 +493,7 @@
 13-04-031-04,NEW HOT BRINE THICKNER RAKE LIFTTING MOTOR #04
 13-04-031-05,NEW HOT BRINE THICKNER OIL COOLING FAN MOTOR #01
 13-04-031-06,NEW HOT BRINE THICKNER OIL COOLING FAN MOTOR #02
-13-04-031-LOCAL PANEL,NEW HOT BRINE THICKNER  LOCAL PANEL FEEDER
+13-04-031-LOCAL PANEL,NEW HOT BRINE THICKNER  LOCAL PANEL FEEDER
 13-04-051-01,MOTHER LIQUOR THICKENER DRIVE RAKE PUMP #01 MOTOR
 13-04-051-02,MOTHER LIQUOR THICKENER DRIVE RAKE PUMP #02 MOTOR
 13-04-051-03,MOTHER LIQUOR THICKENER RAKE LIFT MOTOR
@@ -559,7 +571,7 @@
 13-29-050,WASH THICKENER REPULP BELT CONVEYOR
 13-29-060,DRYER FEED CONVEYOR BELT #60`;
 
-        const screenCsvData = `TAG number,Equipment Description
+    const screenCsvData = `TAG number,Equipment Description
 14-01-001A (VFD),NEW COOLER PUMP #01A (VFD)
 14-01-001B (VFD),NEW COOLER PUMP #02B (VFD)
 14-01-071,SCREEN SUMP PUMP
@@ -577,7 +589,7 @@
 14-03-050,SCRUBER FAN #50
 14-03-060,EXHAUST FAN #01 (MO1) / SCREEN
 14-03-070,EXHAUST FAN #02 (MO2) / COMPACTION
-14-03-080,EXHAUST FAN #01  (MO6) / SHIPPING
+14-03-080,EXHAUST FAN #01  (MO6) / SHIPPING
 14-03-090, EXHAUST FAN #01 / WAREHOUSE
 14-03-100,EXHAUST FAN #02 / WAREHOUSE
 14-03-202-01,COOLER BAGHOUSE EXHAUST FAN #01
@@ -690,7 +702,7 @@
 14-33-027-02,STRORAGE PAN FEEDER #27
 14-33-028-01,STRORAGE PAN FEEDER #28
 14-33-028-02,STRORAGE PAN FEEDER #28
-14-36-020-01,Isolating damper ID fan 20  inlet/ electromechanical #01
+14-36-020-01,Isolating damper ID fan 20  inlet/ electromechanical #01
 14-36-020-02,Isolating damper ID Fan 20 outlet/ electromechanical #01
 14-36-021-01,Isolating damper ID fan 21 inlet/ electromechanical #02
 14-36-021-02,Isolating damper ID Fan 21 outlet/ electromechanical #02
@@ -717,12 +729,12 @@
 14-54-502,ROTARY AIR LOCK VALVE (NEW COOLER BAGFILTER) #502
 14-54-510,Rotary valves below cyclones hopper #510
 14-54-650,ROTARY VALVE (MO6)/ COMPACTION
-14-54-660,ROTARY VALVE  (MO4)/ WAREHOUSE
+14-54-660,ROTARY VALVE  (MO4)/ WAREHOUSE
 14-54-670,ROTARY VALVE (MO8) / SHIPPING
-14-54-680,ROTARY VALVE (MO5)/SCREEN
+14-54-680,ROTary VALVE (MO5)/SCREEN
 14-75-800 M,DIVERTER UNIT`;
-        
-        const compactionCsvData = `TAG number,Equipment Description
+
+    const compactionCsvData = `TAG number,Equipment Description
 16-01-213M,post treatment water pump main drive
 16-01-214M,post treatment water pump main drive
 16-01-216M,grease lubrication roller press compaction circuit 1&2 redundant grease pump A
@@ -859,8 +871,8 @@
 16-31-120M2,post treatment compaction product bucket elevator maintenance drive
 16-31-130M1,post treatment product bucket elevator main drive
 16-31-130M2,post treatment product bucket elevator maintenance drive
-16-31-140M1, bucket elevator external fresh feed KCL  main drive
-16-31-140M2, bucket elevator external fresh feed KCL  maintenance drive
+16-31-140M1, bucket elevator external fresh feed KCL  main drive
+16-31-140M2, bucket elevator external fresh feed KCL  maintenance drive
 16-35-801 M,Motor for TLS (Hopper)
 16-35-802 M,Motor for TLS (Hopper)
 16-35-803 M,Motor for TLS (Hopper)
@@ -884,513 +896,538 @@
 16-85-600M1,de-dusting bag house filter throttle valve actuator
 16-85-600M2,de-dusting bag house filter throttle valve actuator`;
 
-        // --- DATA LOADING ---
-        function loadEquipmentData() {
-            const dataMap = { HLP: hlpCsvData, SCREEN: screenCsvData, COMPACTION: compactionCsvData };
-            for (const zone in dataMap) {
-                try {
-                    const text = dataMap[zone];
-                    const lines = text.split('\n').slice(1);
-                    equipmentData[zone] = lines.map(line => {
-                        const [tag, ...descriptionParts] = line.split(',');
-                        const description = descriptionParts.join(',').trim();
-                        return { tag: tag?.trim(), description: description.replace(/"/g, '') };
-                    }).filter(e => e.tag && e.description);
-                } catch (error) {
-                    console.error(`Error parsing data for ${zone}:`, error);
-                }
-            }
-        }
-
-        // --- USER AND SCHEDULE SETTINGS ---
-        function loadSettings() {
-            const savedSettings = localStorage.getItem('pmAppSettings');
-            if (savedSettings) {
-                const parsed = JSON.parse(savedSettings);
-                userSettings.users = parsed.users || userSettings.users;
-                userSettings.archiveSchedule = parsed.archiveSchedule || userSettings.archiveSchedule;
-            }
-        }
-
-        function saveSettings() {
-            userSettings.archiveSchedule.start = document.getElementById('start-date').value;
-            userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
-            localStorage.setItem('pmAppSettings', JSON.stringify(userSettings));
-        }
-
-        window.saveUsers = () => {
-            userSettings.users.forEach((user, index) => {
-                const input = document.getElementById(`user-edit-${index}`);
-                if (input) user.name = input.value;
-            });
-            saveSettings();
-            renderUserButtons();
-            showAlert('User names saved successfully!', 'Success');
-        };
-
-        function renderUserEditor() {
-            const container = document.getElementById('user-editor-container');
-            container.innerHTML = '';
-            userSettings.users.forEach((user, index) => {
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <label for="user-edit-${index}" class="font-semibold text-sm">${user.id}:</label>
-                    <input type="text" id="user-edit-${index}" value="${user.name}" class="w-full p-2 border rounded-lg mt-1">
-                `;
-                container.appendChild(div);
-            });
-        }
-        
-        function renderUserButtons() {
-            const container = document.getElementById('user-buttons-container');
-            container.innerHTML = '';
-            userSettings.users.forEach(user => {
-                const button = document.createElement('button');
-                button.innerText = user.name;
-                button.className = `${user.color} text-white font-semibold py-3 px-4 rounded-lg shadow-md ${user.hover} transition-transform transform hover:scale-105`;
-                button.onclick = () => login(user.name);
-                container.appendChild(button);
-            });
-        }
-
-        // --- LOGIN/LOGOUT ---
-        window.login = (user) => {
-            currentUser = user;
-            document.getElementById('current-user').innerText = `User: ${currentUser}`;
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('user-interface').classList.remove('hidden');
-            listenForTasks();
-        };
-
-        window.showAdminLogin = () => {
-            document.getElementById('user-selection').classList.add('hidden');
-            document.getElementById('admin-login').classList.remove('hidden');
-        };
-        
-        window.showUserSelection = () => {
-            document.getElementById('admin-login').classList.add('hidden');
-            document.getElementById('user-selection').classList.remove('hidden');
-        };
-
-        window.loginAdmin = async () => {
-            const password = document.getElementById('admin-password').value;
-            if (password === 'Karak@2025') {
-                currentUser = 'Admin';
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('admin-interface').classList.remove('hidden');
-                initializeAdminUI();
-                await checkAndRunArchiveCycle();
-                listenForTasks();
-            } else {
-                showAlert('Incorrect password.');
-            }
-        };
-
-        window.logout = () => {
-            currentUser = null;
-            if (unsubscribe) unsubscribe();
-            document.getElementById('user-interface').classList.add('hidden');
-            document.getElementById('admin-interface').classList.add('hidden');
-            document.getElementById('login-screen').classList.remove('hidden');
-            document.getElementById('admin-password').value = '';
-            renderUserButtons();
-        };
-        
-        // --- ADMIN UI & AUTOMATED DATE LOGIC ---
-        function initializeAdminUI() {
-            renderUserEditor();
-            
-            const startDateInput = document.getElementById('start-date');
-            const intervalSelect = document.getElementById('interval-duration');
-            
-            const { start, interval } = userSettings.archiveSchedule;
-
-            if (start && interval) {
-                startDateInput.value = start;
-                intervalSelect.value = interval;
-            } else {
-                // Set a default for the very first time
-                startDateInput.value = new Date().toISOString().split('T')[0];
-                intervalSelect.value = 'weekly';
-            }
-            
-            updateArchiveScheduleDisplay();
-
-            intervalSelect.addEventListener('change', updateArchiveScheduleDisplay);
-            startDateInput.addEventListener('change', updateArchiveScheduleDisplay);
-        }
-
-        function updateArchiveScheduleDisplay() {
-            const startDateInput = document.getElementById('start-date');
-            const intervalSelect = document.getElementById('interval-duration');
-            
-            let startDate = new Date(startDateInput.value + "T00:00:00");
-            if (isNaN(startDate.getTime())) return;
-
-            let endDate = calculateEndDate(startDate, intervalSelect.value);
-            
-            document.getElementById('end-date-display').textContent = endDate.toLocaleDateString();
-            
-            saveSettings();
-        }
-        
-        function calculateEndDate(startDate, interval) {
-            let endDate = new Date(startDate);
-            if (interval === 'daily') {
-                endDate.setDate(startDate.getDate());
-            } else if (interval === 'weekly') {
-                endDate.setDate(startDate.getDate() + 6);
-            } else if (interval === 'monthly') {
-                endDate.setMonth(startDate.getMonth() + 1);
-                endDate.setDate(endDate.getDate() - 1);
-            }
-            return endDate;
-        }
-
-        // --- UI & MODALS ---
-        window.showAlert = (message, title = 'Alert') => {
-            document.getElementById('alert-title').innerText = title;
-            document.getElementById('alert-message').innerText = message;
-            document.getElementById('alert-modal').classList.remove('hidden');
-        };
-
-        window.closeAlertModal = () => document.getElementById('alert-modal').classList.add('hidden');
-        
-        window.selectZone = (zone) => {
-            currentZone = zone;
-            document.getElementById('equipment-modal-title').innerText = `Select Equipment for ${zone}`;
-            populateEquipmentTable(zone);
-            document.getElementById('equipment-modal').classList.remove('hidden');
-            document.getElementById('tag-search').focus();
-        };
-
-        window.closeEquipmentModal = () => {
-            document.getElementById('equipment-modal').classList.add('hidden');
-            document.getElementById('tag-search').value = '';
-        };
-
-        window.selectEquipment = (tag, description) => {
-            selectedEquipment = { tag, description };
-            document.getElementById('pm-tag-number').innerText = tag;
-            document.getElementById('pm-equipment-description').innerText = description;
-            closeEquipmentModal();
-            document.getElementById('pm-modal').classList.remove('hidden');
-        };
-
-        window.closePmModal = () => {
-            document.getElementById('pm-modal').classList.add('hidden');
-            const form = document.getElementById('pm-modal');
-            form.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
-            form.querySelector('textarea').value = '';
-        };
-
-        function populateEquipmentTable(zone) {
-            const tableBody = document.getElementById('equipment-table-body');
-            const searchInput = document.getElementById('tag-search');
-            const renderTable = (filter = '') => {
-                tableBody.innerHTML = '';
-                const filteredData = equipmentData[zone].filter(eq => 
-                    eq.tag.toLowerCase().includes(filter.toLowerCase()) || 
-                    eq.description.toLowerCase().includes(filter.toLowerCase())
-                );
-                filteredData.forEach(({ tag, description }) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <a href="#" onclick="event.preventDefault(); selectEquipment('${tag}', \`${description.replace(/'/g, "\\'")}\`)" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold">${tag}</a>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">${description}</td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-            }
-            searchInput.onkeyup = () => renderTable(searchInput.value);
-            renderTable();
-        }
-
-        // --- DATA HANDLING AND SUBMISSION ---
-        window.submitPmTask = async () => {
-            const task = {
-                user: currentUser,
-                zone: currentZone,
-                tag: selectedEquipment.tag,
-                description: selectedEquipment.description,
-                sound: document.querySelector('input[name="sound"]:checked')?.value || 'N/A',
-                vibration: document.querySelector('input[name="vibration"]:checked')?.value || 'N/A',
-                heat: document.querySelector('input[name="heat"]:checked')?.value || 'N/A',
-                motor_umbrella: document.querySelector('input[name="motor_umbrella"]:checked')?.value || 'N/A',
-                status: document.querySelector('input[name="status"]:checked')?.value || 'N/A',
-                note: document.getElementById('note').value,
-                timestamp: serverTimestamp()
-            };
+    // --- DATA LOADING ---
+    function loadEquipmentData() {
+        const dataMap = { HLP: hlpCsvData, SCREEN: screenCsvData, COMPACTION: compactionCsvData };
+        for (const zone in dataMap) {
             try {
-                await addDoc(collection(db, "pm_tasks"), task);
-                showAlert('PM Task Saved Successfully!', 'Success');
-                closePmModal();
+                const text = dataMap[zone];
+                const lines = text.split('\n').slice(1);
+                equipmentData[zone] = lines.map(line => {
+                    const [tag, ...descriptionParts] = line.split(',');
+                    const description = descriptionParts.join(',').trim();
+                    return { tag: tag?.trim(), description: description.replace(/"/g, '') };
+                }).filter(e => e.tag && e.description);
             } catch (error) {
-                console.error("Error adding document: ", error);
-                showAlert('Failed to save PM task.', 'Error');
+                console.error(`Error parsing data for ${zone}:`, error);
             }
-        };
-
-        function listenForTasks() {
-            const q = query(collection(db, "pm_tasks"), orderBy("timestamp", "desc"));
-            unsubscribe = onSnapshot(q, (snapshot) => {
-                allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (currentUser === 'Admin') {
-                    displayAdminHistory();
-                    displayAdminLive(allTasks);
-                } else {
-                    displayRecentActivities(allTasks);
-                }
-            }, (error) => {
-                console.error("Firebase snapshot error: ", error);
-                showAlert("Error connecting to the database.", "Database Error");
-            });
         }
-        
-        // --- DISPLAY FUNCTIONS ---
-        function displayRecentActivities(tasks) {
-            const container = document.getElementById('recent-activities');
-            container.innerHTML = '';
-            tasks.slice(0, 6).forEach(task => {
-                const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500';
-                card.innerHTML = `
-                    <h3 class="font-bold text-lg">${task.tag}</h3>
-                    <p class="text-gray-600">${task.description}</p>
-                    <div class="mt-2 text-sm text-gray-500">
-                        <span>by <strong>${task.user}</strong> on </span>
-                        <span>${task.timestamp ? task.timestamp.toDate().toLocaleString() : 'Just now'}</span>
-                    </div>`;
-                container.appendChild(card);
-            });
-        }
-        
-        function displayAdminLive(tasks) {
-             const container = document.getElementById('admin-live-activities');
-             container.innerHTML = '';
-             tasks.slice(0, 10).forEach(task => {
-                const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-lg shadow border';
-                card.innerHTML = `
-                    <h3 class="font-bold text-lg text-blue-700">${task.tag} - ${task.description}</h3>
-                    <p class="text-gray-700">Status: <span class="font-semibold">${task.status}</span>, Sound: <span class="font-semibold">${task.sound}</span></p>
-                    <div class="mt-2 text-sm text-gray-500">
-                        <span>by <strong>${task.user}</strong> at </span>
-                        <span>${task.timestamp ? task.timestamp.toDate().toLocaleString() : 'Just now'}</span>
-                    </div>`;
-                container.appendChild(card);
-             });
-        }
-        
-        function displayAdminHistory() {
-            const container = document.getElementById('admin-history');
-             let tableHTML = `<table class="min-w-full divide-y divide-gray-200">
-                 <thead class="bg-gray-50"><tr>
-                     <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Done By</th>
-                     <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Zone</th>
-                     <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tag</th>
-                     <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                     <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
-                 </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
-            allTasks.forEach(task => { // Show all tasks
-                 tableHTML += `<tr>
-                     <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
-                     <td class="px-2 py-2 whitespace-nowrap">${task.zone || 'N/A'}</td>
-                     <td class="px-2 py-2 whitespace-nowrap">${task.tag}</td>
-                     <td class="px-2 py-2 whitespace-nowrap max-w-xs truncate">${task.description}</td>
-                     <td class="px-2 py-2 whitespace-nowrap">${task.timestamp ? task.timestamp.toDate().toLocaleString() : ''}</td>
-                 </tr>`;
-             });
-             tableHTML += `</tbody></table>`;
-             container.innerHTML = tableHTML;
-        }
+    }
 
-        // --- REPORTING & ADMIN FEATURES ---
-        
-        function getTaskColorCode(task) {
-            const errors = [task.sound, task.vibration, task.heat, task.motor_umbrella, task.status]
-                           .filter(v => v === 'Error').length;
-            if (errors >= 3) return { name: 'Red', text: 'Major Issues Detected' };
-            if (errors === 2) return { name: 'Yellow', text: 'Minor Issues Detected' };
-            return { name: 'Green', text: 'OK' };
-        }
-        
-        const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Note", "Timestamp", "Color code"];
-
-        window.exportToExcel = () => {
-            const tasksToExport = allTasks;
-            if (tasksToExport.length === 0) {
-                return showAlert("No data to export.");
-            }
-            let csvContent = reportHeaders.join(",") + "\r\n";
-            tasksToExport.forEach(task => {
-                const colorCode = getTaskColorCode(task);
-                const row = [
-                    task.user,
-                    task.zone || 'N/A',
-                    task.tag,
-                    `"${(task.description || '').replace(/"/g, '""')}"`,
-                    task.sound || 'N/A',
-                    task.vibration || 'N/A',
-                    task.heat || 'N/A',
-                    task.motor_umbrella || 'N/A',
-                    task.status || 'N/A',
-                    `"${(task.note || '').replace(/"/g, '""')}"`,
-                    task.timestamp ? `"${task.timestamp.toDate().toLocaleString()}"` : '',
-                    colorCode.name
-                ].join(",");
-                csvContent += row + "\r\n";
-            });
-            csvContent += "\r\n\r\nColor Code Legend:\r\n";
-            csvContent += "Green,OK\r\n";
-            csvContent += "Yellow,Minor Issues Detected (2 Errors)\r\n";
-            csvContent += "Red,Major Issues Detected (3+ Errors)\r\n";
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `pm_report_all_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
-        
-        window.exportToPDF = () => {
-            const tasksToExport = allTasks;
-            if(tasksToExport.length === 0) {
-                 return showAlert("No data to export.");
-            }
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('landscape');
-            
-            const body = tasksToExport.map(task => {
-                const colorCode = getTaskColorCode(task);
-                return [
-                    task.user, task.zone || 'N/A', task.tag, task.description,
-                    task.sound || 'N/A', task.vibration || 'N/A', task.heat || 'N/A',
-                    task.motor_umbrella || 'N/A', task.status || 'N/A', task.note || '',
-                    task.timestamp ? task.timestamp.toDate().toLocaleString() : '',
-                    colorCode.name
-                ];
-            });
-
-            doc.autoTable({
-                head: [reportHeaders],
-                body: body,
-                startY: 10,
-                styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
-                columnStyles: { 3: { cellWidth: 40 }, 9: { cellWidth: 40 }, 11: {halign: 'center'} },
-                didDrawCell: function (data) {
-                    if (data.column.dataKey === 11) {
-                        const colorName = data.cell.raw;
-                        if (colorName === 'Red') data.cell.styles.fillColor = '#ffcdd2';
-                        if (colorName === 'Yellow') data.cell.styles.fillColor = '#fff9c4';
-                        if (colorName === 'Green') data.cell.styles.fillColor = '#c8e6c9';
+    // --- USER AND SCHEDULE SETTINGS ---
+    function loadSettings() {
+        const savedSettings = localStorage.getItem('pmAppSettings');
+        if (savedSettings) {
+            const parsed = JSON.parse(savedSettings);
+            if (parsed.users) {
+                userSettings.users = userSettings.users.map(defaultUser => {
+                    const savedUser = parsed.users.find(u => u.id === defaultUser.id);
+                    if (savedUser) {
+                        const mergedUser = { ...defaultUser };
+                        mergedUser.name = savedUser.name;
+                        if (savedUser.password !== undefined) {
+                            mergedUser.password = savedUser.password;
+                        }
+                        return mergedUser;
                     }
-                }
-            });
-
-            const finalY = doc.lastAutoTable.finalY || 20;
-            doc.setFontSize(10);
-            doc.text("Color Code Legend:", 14, finalY + 10);
-            doc.text("- Green: OK", 14, finalY + 15);
-            doc.text("- Yellow: Minor Issues Detected (2 Errors)", 14, finalY + 20);
-            doc.text("- Red: Major Issues Detected (3+ Errors)", 14, finalY + 25);
-
-            doc.save(`pm_report_all_${new Date().toISOString().split('T')[0]}.pdf`);
-        };
-        
-        // --- DATA DELETION AND ARCHIVING FUNCTIONS ---
-        window.closeConfirmClearModal = () => document.getElementById('confirm-clear-modal').classList.add('hidden');
-
-        window.confirmClearAllData = () => {
-            document.getElementById('confirm-clear-message').innerHTML = `Are you sure you want to delete <strong class="text-red-700">ALL PM history data</strong>? This action cannot be undone.`;
-            const yesButton = document.getElementById('confirm-clear-button-yes');
-            yesButton.onclick = clearAllDataConfirmed;
-            yesButton.innerText = "Yes, Delete All";
-            document.getElementById('confirm-clear-modal').classList.remove('hidden');
-        };
-        
-        async function clearAllDataConfirmed() {
-            closeConfirmClearModal();
-            showAlert('Deleting all data...', 'Please Wait');
-            try {
-                const snapshot = await getDocs(collection(db, "pm_tasks"));
-                if (snapshot.empty) {
-                    return showAlert("No data to delete.", "Info");
-                }
-                const batch = writeBatch(db);
-                snapshot.forEach(docRef => {
-                    batch.delete(docRef.ref);
+                    return defaultUser;
                 });
-                await batch.commit();
-                showAlert(`Successfully deleted ${snapshot.size} PM records.`, "Success");
-            } catch (error) {
-                console.error("Error deleting all documents: ", error);
-                showAlert("Failed to delete all data.", "Error");
             }
-        };
-
-        window.runCycleManually = async () => {
-             await checkAndRunArchiveCycle(true); // true = force run now
+            userSettings.archiveSchedule = parsed.archiveSchedule || userSettings.archiveSchedule;
         }
-        
-        async function checkAndRunArchiveCycle(forceRun = false) {
-            const { archiveSchedule } = userSettings;
-            if (!archiveSchedule.start || !archiveSchedule.interval) {
-                console.log("Archive schedule not configured. Skipping cycle.");
+    }
+
+    function saveSettings() {
+        userSettings.archiveSchedule.start = document.getElementById('start-date').value;
+        userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
+        localStorage.setItem('pmAppSettings', JSON.stringify(userSettings));
+    }
+
+    window.saveUsers = () => {
+        userSettings.users.forEach((user, index) => {
+            const nameInput = document.getElementById(`user-name-edit-${index}`);
+            const passwordInput = document.getElementById(`user-password-edit-${index}`);
+            if (nameInput) user.name = nameInput.value;
+            if (passwordInput) user.password = passwordInput.value;
+        });
+        saveSettings();
+        renderUserButtons();
+        showAlert('User names and passwords saved successfully!', 'Success');
+    };
+
+    function renderUserEditor() {
+        const container = document.getElementById('user-editor-container');
+        container.innerHTML = '';
+        userSettings.users.forEach((user, index) => {
+            const div = document.createElement('div');
+            div.className = 'p-3 border rounded-lg bg-gray-50';
+            div.innerHTML = `
+                <label for="user-name-edit-${index}" class="font-semibold text-sm">${user.id}:</label>
+                <input type="text" id="user-name-edit-${index}" value="${user.name}" placeholder="User Name" class="w-full p-2 border rounded-lg mt-1 mb-2">
+                <label for="user-password-edit-${index}" class="font-semibold text-sm">Password:</label>
+                <input type="text" id="user-password-edit-${index}" value="${user.password}" placeholder="User Password" class="w-full p-2 border rounded-lg mt-1">
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderUserButtons() {
+        const container = document.getElementById('user-buttons-container');
+        container.innerHTML = '';
+        userSettings.users.forEach(user => {
+            const button = document.createElement('button');
+            button.innerText = user.name;
+            button.className = `${user.color} text-white font-semibold py-3 px-4 rounded-lg shadow-md ${user.hover} transition-transform transform hover:scale-105`;
+            button.onclick = () => showUserPasswordPrompt(user);
+            container.appendChild(button);
+        });
+    }
+
+    // --- LOGIN/LOGOUT ---
+    window.showUserPasswordPrompt = (user) => {
+        userForLogin = user;
+        document.getElementById('user-password-title').innerText = user.name;
+        document.getElementById('user-password-modal').classList.remove('hidden');
+        document.getElementById('user-password').focus();
+    };
+
+    window.closeUserPasswordModal = () => {
+        document.getElementById('user-password-modal').classList.add('hidden');
+        document.getElementById('user-password').value = '';
+        userForLogin = null;
+    };
+
+    window.loginUserWithPassword = () => {
+        const password = document.getElementById('user-password').value;
+        if (!userForLogin) {
+            showAlert('An unexpected error occurred. Please select a user again.', 'Error');
+            closeUserPasswordModal();
+            return;
+        }
+        if (password === userForLogin.password) {
+            const userNameToLogin = userForLogin.name;
+            closeUserPasswordModal();
+            showUserDashboard(userNameToLogin);
+        } else {
+            showAlert('Incorrect password.');
+            document.getElementById('user-password').value = '';
+            document.getElementById('user-password').focus();
+        }
+    };
+
+    function showUserDashboard(userName) {
+        currentUser = userName;
+        document.getElementById('current-user').innerText = `User: ${currentUser}`;
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('user-interface').classList.remove('hidden');
+        listenForTasks();
+    }
+
+    window.showAdminLogin = () => {
+        document.getElementById('user-selection').classList.add('hidden');
+        document.getElementById('admin-login').classList.remove('hidden');
+    };
+
+    window.showUserSelection = () => {
+        document.getElementById('admin-login').classList.add('hidden');
+        document.getElementById('user-selection').classList.remove('hidden');
+    };
+
+    window.loginAdmin = async () => {
+        const password = document.getElementById('admin-password').value;
+        if (password === 'Karak@2025') {
+            currentUser = 'Admin';
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-interface').classList.remove('hidden');
+            initializeAdminUI();
+            await checkAndRunArchiveCycle();
+            listenForTasks();
+        } else {
+            showAlert('Incorrect password.');
+        }
+    };
+
+    window.logout = () => {
+        currentUser = null;
+        userForLogin = null;
+        if (unsubscribe) unsubscribe();
+        document.getElementById('user-interface').classList.add('hidden');
+        document.getElementById('admin-interface').classList.add('hidden');
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('admin-password').value = '';
+        renderUserButtons();
+    };
+
+    // --- ADMIN UI & AUTOMATED DATE LOGIC ---
+    function initializeAdminUI() {
+        renderUserEditor();
+        const startDateInput = document.getElementById('start-date');
+        const intervalSelect = document.getElementById('interval-duration');
+        const { start, interval } = userSettings.archiveSchedule;
+        if (start && interval) {
+            startDateInput.value = start;
+            intervalSelect.value = interval;
+        } else {
+            startDateInput.value = new Date().toISOString().split('T')[0];
+            intervalSelect.value = 'weekly';
+        }
+        updateArchiveScheduleDisplay();
+        intervalSelect.addEventListener('change', updateArchiveScheduleDisplay);
+        startDateInput.addEventListener('change', updateArchiveScheduleDisplay);
+    }
+
+    function updateArchiveScheduleDisplay() {
+        const startDateInput = document.getElementById('start-date');
+        const intervalSelect = document.getElementById('interval-duration');
+        let startDate = new Date(startDateInput.value + "T00:00:00");
+        if (isNaN(startDate.getTime())) return;
+        let endDate = calculateEndDate(startDate, intervalSelect.value);
+        document.getElementById('end-date-display').textContent = endDate.toLocaleDateString();
+        saveSettings();
+    }
+
+    function calculateEndDate(startDate, interval) {
+        let endDate = new Date(startDate);
+        if (interval === 'daily') {
+            endDate.setDate(startDate.getDate());
+        } else if (interval === 'weekly') {
+            endDate.setDate(startDate.getDate() + 6);
+        } else if (interval === 'monthly') {
+            endDate.setMonth(startDate.getMonth() + 1);
+            endDate.setDate(endDate.getDate() - 1);
+        }
+        return endDate;
+    }
+
+    // --- UI & MODALS ---
+    window.showAlert = (message, title = 'Alert') => {
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-message').innerText = message;
+        document.getElementById('alert-modal').classList.remove('hidden');
+    };
+
+    window.closeAlertModal = () => document.getElementById('alert-modal').classList.add('hidden');
+
+    window.selectZone = (zone) => {
+        currentZone = zone;
+        document.getElementById('equipment-modal-title').innerText = `Select Equipment for ${zone}`;
+        populateEquipmentTable(zone);
+        document.getElementById('equipment-modal').classList.remove('hidden');
+        document.getElementById('tag-search').focus();
+    };
+
+    window.closeEquipmentModal = () => {
+        document.getElementById('equipment-modal').classList.add('hidden');
+        document.getElementById('tag-search').value = '';
+    };
+
+    window.selectEquipment = (tag, description) => {
+        selectedEquipment = { tag, description };
+        document.getElementById('pm-tag-number').innerText = tag;
+        document.getElementById('pm-equipment-description').innerText = description;
+        closeEquipmentModal();
+        document.getElementById('pm-modal').classList.remove('hidden');
+    };
+
+    window.closePmModal = () => {
+        document.getElementById('pm-modal').classList.add('hidden');
+        const form = document.getElementById('pm-modal');
+        form.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+        form.querySelector('textarea').value = '';
+    };
+
+    function populateEquipmentTable(zone) {
+        const tableBody = document.getElementById('equipment-table-body');
+        const searchInput = document.getElementById('tag-search');
+        const renderTable = (filter = '') => {
+            tableBody.innerHTML = '';
+            const filteredData = equipmentData[zone].filter(eq =>
+                eq.tag.toLowerCase().includes(filter.toLowerCase()) ||
+                eq.description.toLowerCase().includes(filter.toLowerCase())
+            );
+            filteredData.forEach(({ tag, description }) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="#" onclick="event.preventDefault(); selectEquipment('${tag}', \`${description.replace(/'/g, "\\'")}\`)" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold">${tag}</a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${description}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        searchInput.onkeyup = () => renderTable(searchInput.value);
+        renderTable();
+    }
+
+    // --- DATA HANDLING AND SUBMISSION ---
+    window.submitPmTask = async () => {
+        const task = {
+            user: currentUser,
+            zone: currentZone,
+            tag: selectedEquipment.tag,
+            description: selectedEquipment.description,
+            sound: document.querySelector('input[name="sound"]:checked')?.value || 'N/A',
+            vibration: document.querySelector('input[name="vibration"]:checked')?.value || 'N/A',
+            heat: document.querySelector('input[name="heat"]:checked')?.value || 'N/A',
+            motor_umbrella: document.querySelector('input[name="motor_umbrella"]:checked')?.value || 'N/A',
+            status: document.querySelector('input[name="status"]:checked')?.value || 'N/A',
+            note: document.getElementById('note').value,
+            timestamp: serverTimestamp()
+        };
+        try {
+            await addDoc(collection(db, "pm_tasks"), task);
+            showAlert('PM Task Saved Successfully!', 'Success');
+            closePmModal();
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            showAlert('Failed to save PM task.', 'Error');
+        }
+    };
+
+    function listenForTasks() {
+        const q = query(collection(db, "pm_tasks"), orderBy("timestamp", "desc"));
+        unsubscribe = onSnapshot(q, (snapshot) => {
+            allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (currentUser === 'Admin') {
+                displayAdminHistory();
+                displayAdminLive(allTasks);
+            } else if (currentUser) {
+                displayRecentActivities(allTasks);
+            }
+        }, (error) => {
+            console.error("Firebase snapshot error: ", error);
+            showAlert("Error connecting to the database.", "Database Error");
+        });
+    }
+
+    // --- DISPLAY FUNCTIONS ---
+    function displayRecentActivities(tasks) {
+        const container = document.getElementById('recent-activities');
+        container.innerHTML = '';
+        tasks.slice(0, 6).forEach(task => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500';
+            card.innerHTML = `
+                <h3 class="font-bold text-lg">${task.tag}</h3>
+                <p class="text-gray-600">${task.description}</p>
+                <div class="mt-2 text-sm text-gray-500">
+                    <span>by <strong>${task.user}</strong> on </span>
+                    <span>${task.timestamp ? task.timestamp.toDate().toLocaleString() : 'Just now'}</span>
+                </div>`;
+            container.appendChild(card);
+        });
+    }
+
+    function displayAdminLive(tasks) {
+        const container = document.getElementById('admin-live-activities');
+        container.innerHTML = '';
+        tasks.slice(0, 10).forEach(task => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-lg shadow border';
+            card.innerHTML = `
+                <h3 class="font-bold text-lg text-blue-700">${task.tag} - ${task.description}</h3>
+                <p class="text-gray-700">Status: <span class="font-semibold">${task.status}</span>, Sound: <span class="font-semibold">${task.sound}</span></p>
+                <div class="mt-2 text-sm text-gray-500">
+                    <span>by <strong>${task.user}</strong> at </span>
+                    <span>${task.timestamp ? task.timestamp.toDate().toLocaleString() : 'Just now'}</span>
+                </div>`;
+            container.appendChild(card);
+        });
+    }
+
+    function displayAdminHistory() {
+        const container = document.getElementById('admin-history');
+        let tableHTML = `<table class="min-w-full divide-y divide-gray-200">
+                     <thead class="bg-gray-50"><tr>
+                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Done By</th>
+                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Zone</th>
+                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tag</th>
+                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
+                     </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
+        allTasks.forEach(task => {
+            tableHTML += `<tr>
+                       <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
+                       <td class="px-2 py-2 whitespace-nowrap">${task.zone || 'N/A'}</td>
+                       <td class="px-2 py-2 whitespace-nowrap">${task.tag}</td>
+                       <td class="px-2 py-2 whitespace-nowrap max-w-xs truncate">${task.description}</td>
+                       <td class="px-2 py-2 whitespace-nowrap">${task.timestamp ? task.timestamp.toDate().toLocaleString() : ''}</td>
+                 </tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        container.innerHTML = tableHTML;
+    }
+
+    // --- REPORTING & ADMIN FEATURES ---
+    function getTaskColorCode(task) {
+        const errors = [task.sound, task.vibration, task.heat, task.motor_umbrella, task.status]
+            .filter(v => v === 'Error').length;
+        if (errors >= 3) return { name: 'Red', text: 'Major Issues Detected' };
+        if (errors >= 2) return { name: 'Yellow', text: 'Minor Issues Detected' };
+        return { name: 'Green', text: 'OK' };
+    }
+
+    const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Note", "Timestamp", "Color code"];
+
+    window.exportToExcel = () => {
+        const tasksToExport = allTasks;
+        if (tasksToExport.length === 0) {
+            return showAlert("No data to export.");
+        }
+        let csvContent = reportHeaders.join(",") + "\r\n";
+        tasksToExport.forEach(task => {
+            const colorCode = getTaskColorCode(task);
+            const row = [
+                task.user,
+                task.zone || 'N/A',
+                task.tag,
+                `"${(task.description || '').replace(/"/g, '""')}"`,
+                task.sound || 'N/A',
+                task.vibration || 'N/A',
+                task.heat || 'N/A',
+                task.motor_umbrella || 'N/A',
+                task.status || 'N/A',
+                `"${(task.note || '').replace(/"/g, '""')}"`,
+                task.timestamp ? `"${task.timestamp.toDate().toLocaleString()}"` : '',
+                colorCode.name
+            ].join(",");
+            csvContent += row + "\r\n";
+        });
+        csvContent += "\r\n\r\nColor Code Legend:\r\n";
+        csvContent += "Green,OK\r\n";
+        csvContent += "Yellow,Minor Issues Detected (2 Errors)\r\n";
+        csvContent += "Red,Major Issues Detected (3+ Errors)\r\n";
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `pm_report_all_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    window.exportToPDF = () => {
+        const tasksToExport = allTasks;
+        if (tasksToExport.length === 0) {
+            return showAlert("No data to export.");
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape');
+        const body = tasksToExport.map(task => {
+            const colorCode = getTaskColorCode(task);
+            return [
+                task.user, task.zone || 'N/A', task.tag, task.description,
+                task.sound || 'N/A', task.vibration || 'N/A', task.heat || 'N/A',
+                task.motor_umbrella || 'N/A', task.status || 'N/A', task.note || '',
+                task.timestamp ? task.timestamp.toDate().toLocaleString() : '',
+                colorCode.name
+            ];
+        });
+        doc.autoTable({
+            head: [reportHeaders],
+            body: body,
+            startY: 10,
+            styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+            columnStyles: { 3: { cellWidth: 40 }, 9: { cellWidth: 40 }, 11: { halign: 'center' } },
+            didDrawCell: function (data) {
+                if (data.column.dataKey === 11) {
+                    const colorName = data.cell.raw;
+                    if (colorName === 'Red') data.cell.styles.fillColor = '#ffcdd2';
+                    if (colorName === 'Yellow') data.cell.styles.fillColor = '#fff9c4';
+                    if (colorName === 'Green') data.cell.styles.fillColor = '#c8e6c9';
+                }
+            }
+        });
+        const finalY = doc.lastAutoTable.finalY || 20;
+        doc.setFontSize(10);
+        doc.text("Color Code Legend:", 14, finalY + 10);
+        doc.text("- Green: OK", 14, finalY + 15);
+        doc.text("- Yellow: Minor Issues Detected (2 Errors)", 14, finalY + 20);
+        doc.text("- Red: Major Issues Detected (3+ Errors)", 14, finalY + 25);
+        doc.save(`pm_report_all_${new Date().toISOString().split('T')[0]}.pdf`);
+    };
+
+    // --- DATA DELETION AND ARCHIVING FUNCTIONS ---
+    window.closeConfirmClearModal = () => document.getElementById('confirm-clear-modal').classList.add('hidden');
+
+    window.confirmClearAllData = () => {
+        document.getElementById('confirm-clear-message').innerHTML = `Are you sure you want to delete <strong class="text-red-700">ALL PM history data</strong>? This action cannot be undone.`;
+        const yesButton = document.getElementById('confirm-clear-button-yes');
+        yesButton.onclick = clearAllDataConfirmed;
+        yesButton.innerText = "Yes, Delete All";
+        document.getElementById('confirm-clear-modal').classList.remove('hidden');
+    };
+
+    async function clearAllDataConfirmed() {
+        closeConfirmClearModal();
+        showAlert('Deleting all data...', 'Please Wait');
+        try {
+            const snapshot = await getDocs(collection(db, "pm_tasks"));
+            if (snapshot.empty) {
+                showAlert("No data to delete.", "Info");
                 return;
             }
-
-            let startDate = new Date(archiveSchedule.start + "T00:00:00");
-            let endDate = calculateEndDate(startDate, archiveSchedule.interval);
-            const today = new Date();
-            today.setHours(0,0,0,0); // Normalize to start of day for comparison
-            
-            if (forceRun || today > endDate) {
-                const cycleStartDate = new Date(startDate);
-                const cycleEndDate = new Date(endDate);
-
-                // Run the deletion for the completed period
-                showAlert('Archive cycle running...', 'Processing');
-                
-                const startTimestamp = Timestamp.fromDate(cycleStartDate);
-                const endTimestamp = Timestamp.fromDate(new Date(cycleEndDate.getTime() + (24*60*60*1000 - 1))); // End of day
-                const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", startTimestamp), where("timestamp", "<=", endTimestamp));
-                
-                const snapshot = await getDocs(q);
-                const tasksToDelete = snapshot.docs;
-
-                if (tasksToDelete.length > 0) {
-                    const batch = writeBatch(db);
-                    tasksToDelete.forEach(doc => {
-                        batch.delete(doc.ref);
-                    });
-                    await batch.commit();
-                }
-
-                // Automatically set the schedule for the next period
-                const newStartDate = new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000));
-                document.getElementById('start-date').value = newStartDate.toISOString().split('T')[0];
-                updateArchiveScheduleDisplay(); // This calculates new end date and saves settings
-
-                showAlert(`Archive cycle complete. ${tasksToDelete.length} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted. The new cycle has been set.`, 'Success');
-            } else if (forceRun) {
-                showAlert(`The current archive period has not ended yet. The cycle will run after ${endDate.toLocaleDateString()}.`, 'Info');
-            }
+            const batch = writeBatch(db);
+            snapshot.forEach(docRef => {
+                batch.delete(docRef.ref);
+            });
+            await batch.commit();
+            showAlert(`Successfully deleted ${snapshot.size} PM records.`, "Success");
+        } catch (error) {
+            console.error("Error deleting all documents: ", error);
+            showAlert("Failed to delete all data.", "Error");
         }
+    };
 
-        // --- INITIALIZATION ---
-        window.onload = () => {
-            loadEquipmentData();
-            loadSettings();
-            renderUserButtons();
-            console.log("Application initialized.");
-        };
-    </script>
+    window.runCycleManually = async () => {
+        await checkAndRunArchiveCycle(true);
+    }
+
+    async function checkAndRunArchiveCycle(forceRun = false) {
+        const { archiveSchedule } = userSettings;
+        if (!archiveSchedule.start || !archiveSchedule.interval) {
+            console.log("Archive schedule not configured. Skipping cycle.");
+            return;
+        }
+        let startDate = new Date(archiveSchedule.start + "T00:00:00");
+        let endDate = calculateEndDate(startDate, archiveSchedule.interval);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (forceRun || today > endDate) {
+            const cycleStartDate = new Date(startDate);
+            const cycleEndDate = new Date(endDate);
+            showAlert('Archive cycle running...', 'Processing');
+            const startTimestamp = Timestamp.fromDate(cycleStartDate);
+            const endTimestamp = Timestamp.fromDate(new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000 - 1)));
+            const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", startTimestamp), where("timestamp", "<=", endTimestamp));
+            const snapshot = await getDocs(q);
+            const tasksToDelete = snapshot.docs;
+            if (tasksToDelete.length > 0) {
+                const batch = writeBatch(db);
+                tasksToDelete.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+            }
+            const newStartDate = new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000));
+            document.getElementById('start-date').value = newStartDate.toISOString().split('T')[0];
+            updateArchiveScheduleDisplay();
+            showAlert(`Archive cycle complete. ${tasksToDelete.length} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted. The new cycle has been set.`, 'Success');
+        } else if (forceRun) {
+            showAlert(`The current archive period has not ended yet. The cycle will run after ${endDate.toLocaleDateString()}.`, 'Info');
+        }
+    }
+
+    // --- INITIALIZATION ---
+    window.onload = () => {
+        loadEquipmentData();
+        loadSettings();
+        renderUserButtons();
+        console.log("Application initialized successfully.");
+    };
+</script>
 </body>
 </html>
