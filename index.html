@@ -255,7 +255,7 @@
 
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- FIREBASE CONFIG ---
     const firebaseConfig = {
@@ -279,8 +279,11 @@
     let selectedEquipment = null;
     let equipmentData = { HLP: [], SCREEN: [], COMPACTION: [] };
     let allTasks = [];
-    let unsubscribe = null;
-    let userSettings = {
+    let unsubscribePmTasks = null; // Renamed for clarity
+    let unsubscribeUserSettings = null; // New unsubscribe for user settings listener
+
+    // Default user settings - will be used if no settings exist in Firestore
+    const defaultUserSettings = {
         users: [
             { id: 'user1', name: 'Khaled', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700' },
             { id: 'user2', name: 'Mohammed', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700' },
@@ -288,10 +291,11 @@
             { id: 'user4', name: 'User 4', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700' }
         ],
         archiveSchedule: {
-            start: null,
+            start: null, // Will be set to today's date if not present
             interval: 'weekly'
         }
     };
+    let userSettings = { ...defaultUserSettings }; // Start with a copy of defaults
 
     // --- EMBEDDED CSV DATA ---
     const hlpCsvData = `TAG number,Equipment Description
@@ -914,43 +918,67 @@
         }
     }
 
-    // --- USER AND SCHEDULE SETTINGS ---
-    function loadSettings() {
-        const savedSettings = localStorage.getItem('pmAppSettings');
-        if (savedSettings) {
-            const parsed = JSON.parse(savedSettings);
-            if (parsed.users) {
-                userSettings.users = userSettings.users.map(defaultUser => {
-                    const savedUser = parsed.users.find(u => u.id === defaultUser.id);
-                    if (savedUser) {
-                        const mergedUser = { ...defaultUser };
-                        mergedUser.name = savedUser.name;
-                        if (savedUser.password !== undefined) {
-                            mergedUser.password = savedUser.password;
-                        }
-                        return mergedUser;
-                    }
-                    return defaultUser;
-                });
+    // --- USER AND SCHEDULE SETTINGS (NOW FIREBASE-BACKED) ---
+    async function loadSettings() {
+        const settingsDocRef = doc(db, "app_settings", "global_settings");
+        try {
+            const docSnap = await getDoc(settingsDocRef);
+
+            if (docSnap.exists()) {
+                const firebaseSettings = docSnap.data();
+                // Merge with defaults to ensure all expected properties exist,
+                // but prioritize Firebase values if they exist.
+                userSettings.users = firebaseSettings.users && Array.isArray(firebaseSettings.users) ? firebaseSettings.users.map(fbUser => {
+                    // Find corresponding default user to maintain color/hover if not in FB
+                    const defaultUser = defaultUserSettings.users.find(du => du.id === fbUser.id);
+                    return { ...defaultUser, ...fbUser }; // Merge default with Firebase data
+                }) : defaultUserSettings.users;
+                userSettings.archiveSchedule = firebaseSettings.archiveSchedule || defaultUserSettings.archiveSchedule;
+
+                // Ensure start date is set if null in Firestore
+                if (!userSettings.archiveSchedule.start) {
+                    userSettings.archiveSchedule.start = new Date().toISOString().split('T')[0];
+                    await saveSettings(); // Save updated start date to Firestore
+                }
+
+            } else {
+                console.warn("No 'global_settings' document found in Firestore. Creating with default settings.");
+                // Set the default start date to today
+                defaultUserSettings.archiveSchedule.start = new Date().toISOString().split('T')[0];
+                userSettings = { ...defaultUserSettings }; // Use the updated default
+                await setDoc(settingsDocRef, userSettings); // Save default settings to Firestore
             }
-            userSettings.archiveSchedule = parsed.archiveSchedule || userSettings.archiveSchedule;
+            renderUserButtons();
+        } catch (error) {
+            console.error("Error loading settings from Firestore:", error);
+            showAlert('Failed to load application settings.', 'Error');
         }
     }
 
-    function saveSettings() {
-        userSettings.archiveSchedule.start = document.getElementById('start-date').value;
-        userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
-        localStorage.setItem('pmAppSettings', JSON.stringify(userSettings));
+    async function saveSettings() {
+        // Ensure the global userSettings object reflects the current UI state for archiving
+        userSettings.archiveSchedule.start = document.getElementById('start-date')?.value || userSettings.archiveSchedule.start;
+        userSettings.archiveSchedule.interval = document.getElementById('interval-duration')?.value || userSettings.archiveSchedule.interval;
+
+        const settingsDocRef = doc(db, "app_settings", "global_settings");
+        try {
+            await setDoc(settingsDocRef, userSettings);
+            console.log("Settings saved to Firestore.");
+        } catch (error) {
+            console.error("Error saving settings to Firestore:", error);
+            showAlert('Failed to save settings to Firebase.', 'Error');
+        }
     }
 
-    window.saveUsers = () => {
+    window.saveUsers = async () => {
+        // Update userSettings object from UI input fields
         userSettings.users.forEach((user, index) => {
             const nameInput = document.getElementById(`user-name-edit-${index}`);
             const passwordInput = document.getElementById(`user-password-edit-${index}`);
             if (nameInput) user.name = nameInput.value;
             if (passwordInput) user.password = passwordInput.value;
         });
-        saveSettings();
+        await saveSettings(); // Save the updated userSettings to Firestore
         renderUserButtons();
         showAlert('User names and passwords saved successfully!', 'Success');
     };
@@ -1004,8 +1032,10 @@
             closeUserPasswordModal();
             return;
         }
-        if (password === userForLogin.password) {
-            const userNameToLogin = userForLogin.name;
+        // Retrieve the latest user details from the synchronized userSettings
+        const latestUser = userSettings.users.find(u => u.id === userForLogin.id);
+        if (latestUser && password === latestUser.password) {
+            const userNameToLogin = latestUser.name;
             closeUserPasswordModal();
             showUserDashboard(userNameToLogin);
         } else {
@@ -1020,12 +1050,13 @@
         document.getElementById('current-user').innerText = `User: ${currentUser}`;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('user-interface').classList.remove('hidden');
-        listenForTasks();
+        listenForTasks(); // Start listening for PM tasks
     }
 
     window.showAdminLogin = () => {
         document.getElementById('user-selection').classList.add('hidden');
         document.getElementById('admin-login').classList.remove('hidden');
+        document.getElementById('admin-password').focus();
     };
 
     window.showUserSelection = () => {
@@ -1035,43 +1066,49 @@
 
     window.loginAdmin = async () => {
         const password = document.getElementById('admin-password').value;
-        if (password === 'Karak@2025') {
+        if (password === 'Karak@2025') { // Admin password remains hardcoded
             currentUser = 'Admin';
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('admin-interface').classList.remove('hidden');
             initializeAdminUI();
-            await checkAndRunArchiveCycle();
-            listenForTasks();
+            await checkAndRunArchiveCycle(); // Run archive cycle check on admin login
+            listenForTasks(); // Start listening for PM tasks
+            listenForUserSettingsChanges(); // Start listening for user settings changes for admin
         } else {
             showAlert('Incorrect password.');
+            document.getElementById('admin-password').value = '';
         }
     };
 
     window.logout = () => {
         currentUser = null;
         userForLogin = null;
-        if (unsubscribe) unsubscribe();
+        if (unsubscribePmTasks) unsubscribePmTasks(); // Stop listening for PM tasks
+        if (unsubscribeUserSettings) unsubscribeUserSettings(); // Stop listening for user settings
         document.getElementById('user-interface').classList.add('hidden');
         document.getElementById('admin-interface').classList.add('hidden');
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('admin-password').value = '';
-        renderUserButtons();
+        renderUserButtons(); // Re-render user buttons to reflect latest settings
     };
 
     // --- ADMIN UI & AUTOMATED DATE LOGIC ---
     function initializeAdminUI() {
-        renderUserEditor();
+        renderUserEditor(); // Render the user editor based on current userSettings
         const startDateInput = document.getElementById('start-date');
         const intervalSelect = document.getElementById('interval-duration');
-        const { start, interval } = userSettings.archiveSchedule;
+        const { start, interval } = userSettings.archiveSchedule; // Use the loaded userSettings
+
         if (start && interval) {
             startDateInput.value = start;
             intervalSelect.value = interval;
         } else {
+            // This case should ideally not happen if loadSettings works correctly,
+            // but as a fallback, ensure the UI elements are initialized.
             startDateInput.value = new Date().toISOString().split('T')[0];
             intervalSelect.value = 'weekly';
         }
-        updateArchiveScheduleDisplay();
+        updateArchiveScheduleDisplay(); // Update display immediately
         intervalSelect.addEventListener('change', updateArchiveScheduleDisplay);
         startDateInput.addEventListener('change', updateArchiveScheduleDisplay);
     }
@@ -1083,13 +1120,17 @@
         if (isNaN(startDate.getTime())) return;
         let endDate = calculateEndDate(startDate, intervalSelect.value);
         document.getElementById('end-date-display').textContent = endDate.toLocaleDateString();
-        saveSettings();
+        // The saveSettings call for archive schedule updates happens in saveSettings,
+        // which is triggered by button clicks, not every UI change here.
+        // However, if the user navigates away, these changes won't persist until explicitly saved.
+        // For simplicity, we are not calling saveSettings on every UI change for the schedule.
+        // It's saved when runCycleManually is called, or when other settings are saved.
     }
 
     function calculateEndDate(startDate, interval) {
         let endDate = new Date(startDate);
         if (interval === 'daily') {
-            endDate.setDate(startDate.getDate());
+            endDate.setDate(startDate.getDate()); // No change for daily to represent end of day
         } else if (interval === 'weekly') {
             endDate.setDate(startDate.getDate() + 6);
         } else if (interval === 'monthly') {
@@ -1097,6 +1138,30 @@
             endDate.setDate(endDate.getDate() - 1);
         }
         return endDate;
+    }
+
+    // Listener for user settings changes (for admin interface)
+    function listenForUserSettingsChanges() {
+        const settingsDocRef = doc(db, "app_settings", "global_settings");
+        unsubscribeUserSettings = onSnapshot(settingsDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const firebaseSettings = docSnap.data();
+                userSettings.users = firebaseSettings.users && Array.isArray(firebaseSettings.users) ? firebaseSettings.users.map(fbUser => {
+                    const defaultUser = defaultUserSettings.users.find(du => du.id === fbUser.id);
+                    return { ...defaultUser, ...fbUser };
+                }) : defaultUserSettings.users;
+                userSettings.archiveSchedule = firebaseSettings.archiveSchedule || defaultUserSettings.archiveSchedule;
+
+                renderUserEditor(); // Re-render user editor to show latest data
+                renderUserButtons(); // Re-render login buttons if names/passwords change
+                updateArchiveScheduleDisplay(); // Update the archive schedule display
+            } else {
+                console.warn("Global settings document no longer exists in Firestore.");
+            }
+        }, (error) => {
+            console.error("Firebase settings snapshot error: ", error);
+            showAlert("Error syncing settings from database.", "Database Error");
+        });
     }
 
     // --- UI & MODALS ---
@@ -1187,7 +1252,7 @@
 
     function listenForTasks() {
         const q = query(collection(db, "pm_tasks"), orderBy("timestamp", "desc"));
-        unsubscribe = onSnapshot(q, (snapshot) => {
+        unsubscribePmTasks = onSnapshot(q, (snapshot) => {
             allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             if (currentUser === 'Admin') {
                 displayAdminHistory();
@@ -1196,8 +1261,8 @@
                 displayRecentActivities(allTasks);
             }
         }, (error) => {
-            console.error("Firebase snapshot error: ", error);
-            showAlert("Error connecting to the database.", "Database Error");
+            console.error("Firebase snapshot error for tasks: ", error);
+            showAlert("Error connecting to the database for tasks.", "Database Error");
         });
     }
 
@@ -1205,7 +1270,8 @@
     function displayRecentActivities(tasks) {
         const container = document.getElementById('recent-activities');
         container.innerHTML = '';
-        tasks.slice(0, 6).forEach(task => {
+        const userTasks = tasks.filter(task => task.user === currentUser); // Filter by current user
+        userTasks.slice(0, 6).forEach(task => { // Show recent 6 for the user
             const card = document.createElement('div');
             card.className = 'bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500';
             card.innerHTML = `
@@ -1387,47 +1453,65 @@
     }
 
     async function checkAndRunArchiveCycle(forceRun = false) {
-        const { archiveSchedule } = userSettings;
+        // Ensure userSettings.archiveSchedule is up-to-date from UI fields if changed
+        userSettings.archiveSchedule.start = document.getElementById('start-date').value;
+        userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
+        await saveSettings(); // Persist any UI changes to schedule before running
+
+        const { archiveSchedule } = userSettings; // Get the latest schedule from userSettings
         if (!archiveSchedule.start || !archiveSchedule.interval) {
             console.log("Archive schedule not configured. Skipping cycle.");
             return;
         }
+
         let startDate = new Date(archiveSchedule.start + "T00:00:00");
         let endDate = calculateEndDate(startDate, archiveSchedule.interval);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+
         if (forceRun || today > endDate) {
             const cycleStartDate = new Date(startDate);
             const cycleEndDate = new Date(endDate);
             showAlert('Archive cycle running...', 'Processing');
-            const startTimestamp = Timestamp.fromDate(cycleStartDate);
-            const endTimestamp = Timestamp.fromDate(new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000 - 1)));
-            const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", startTimestamp), where("timestamp", "<=", endTimestamp));
-            const snapshot = await getDocs(q);
-            const tasksToDelete = snapshot.docs;
-            if (tasksToDelete.length > 0) {
-                const batch = writeBatch(db);
-                tasksToDelete.forEach(doc => {
-                    batch.delete(doc.ref);
-                });
-                await batch.commit();
+            // Ensure endTimestamp includes the entire end day
+            const endTimestamp = Timestamp.fromDate(new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000) - 1));
+            const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", Timestamp.fromDate(cycleStartDate)), where("timestamp", "<=", endTimestamp));
+
+            try {
+                const snapshot = await getDocs(q);
+                const tasksToDelete = snapshot.docs;
+
+                if (tasksToDelete.length > 0) {
+                    const batch = writeBatch(db);
+                    tasksToDelete.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                }
+
+                // Update the start date for the next cycle
+                const newStartDate = new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000));
+                userSettings.archiveSchedule.start = newStartDate.toISOString().split('T')[0];
+                await saveSettings(); // Save the new archive start date to Firestore
+
+                updateArchiveScheduleDisplay();
+                showAlert(`Archive cycle complete. ${tasksToDelete.length} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted. The new cycle has been set.`, 'Success');
+
+            } catch (error) {
+                console.error("Error during archive cycle: ", error);
+                showAlert("Failed to complete archive cycle.", "Error");
             }
-            const newStartDate = new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000));
-            document.getElementById('start-date').value = newStartDate.toISOString().split('T')[0];
-            updateArchiveScheduleDisplay();
-            showAlert(`Archive cycle complete. ${tasksToDelete.length} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted. The new cycle has been set.`, 'Success');
         } else if (forceRun) {
             showAlert(`The current archive period has not ended yet. The cycle will run after ${endDate.toLocaleDateString()}.`, 'Info');
         }
     }
 
     // --- INITIALIZATION ---
-    window.onload = () => {
+    window.onload = async () => {
         loadEquipmentData();
-        loadSettings();
-        renderUserButtons();
+        await loadSettings(); // Ensure settings are loaded from Firebase before rendering buttons
         console.log("Application initialized successfully.");
     };
-</script>
+    </script>
 </body>
 </html>
