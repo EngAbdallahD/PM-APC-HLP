@@ -255,7 +255,7 @@
 
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc, setDoc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- FIREBASE CONFIG ---
     const firebaseConfig = {
@@ -279,23 +279,23 @@
     let selectedEquipment = null;
     let equipmentData = { HLP: [], SCREEN: [], COMPACTION: [] };
     let allTasks = [];
-    let unsubscribePmTasks = null; // Renamed for clarity
-    let unsubscribeUserSettings = null; // New unsubscribe for user settings listener
+    let unsubscribePmTasks = null;
+    let unsubscribeUserSettings = null;
 
-    // Default user settings - will be used if no settings exist in Firestore
+    // Default user settings - NOW WITH allowedZones
     const defaultUserSettings = {
         users: [
-            { id: 'user1', name: 'Khaled', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700' },
-            { id: 'user2', name: 'Mohammed', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700' },
-            { id: 'user3', name: 'Moatasem', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700' },
-            { id: 'user4', name: 'User 4', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700' }
+            { id: 'user1', name: 'Khaled', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700', allowedZones: ['HLP', 'SCREEN', 'COMPACTION'] },
+            { id: 'user2', name: 'Mohammed', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700', allowedZones: ['HLP'] },
+            { id: 'user3', name: 'Moatasem', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700', allowedZones: ['SCREEN', 'COMPACTION'] },
+            { id: 'user4', name: 'User 4', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700', allowedZones: [] }
         ],
         archiveSchedule: {
-            start: null, // Will be set to today's date if not present
+            start: null,
             interval: 'weekly'
         }
     };
-    let userSettings = { ...defaultUserSettings }; // Start with a copy of defaults
+    let userSettings = { ...defaultUserSettings };
 
     // --- EMBEDDED CSV DATA ---
     const hlpCsvData = `TAG number,Equipment Description
@@ -409,8 +409,8 @@
 13-01-453,#33 CENTRIFUGE LUBE OIL MOTOR
 13-01-454,#34 CENTRIFUGE LUBE OIL MOTOR
 13-01-462,#42 CENTRIFUGE LUBE OIL MOTOR
-13-01-463,#43 CENTRIFUGE LUBE OIL MOTOR
-13-01-464,#44 CENTRIFUGE LUBE OIL MOTOR
+13-01-463,#43 CENTRIFUGE LUBE OIL COOLING FAN / CENTRIFUGE #43
+13-01-464,#44 CENTRIFUGE LUBE OIL COOLING FAN / CENTRIFUGE #44
 13-01-471,#51 CENTRIFUGE LUBE OIL MOTOR
 13-01-472,#52 CENTRIFUGE LUBE OIL MOTOR
 13-01-473,#53 CENTRIFUGE LUBE OIL MOTOR
@@ -926,27 +926,23 @@
 
             if (docSnap.exists()) {
                 const firebaseSettings = docSnap.data();
-                // Merge with defaults to ensure all expected properties exist,
-                // but prioritize Firebase values if they exist.
                 userSettings.users = firebaseSettings.users && Array.isArray(firebaseSettings.users) ? firebaseSettings.users.map(fbUser => {
-                    // Find corresponding default user to maintain color/hover if not in FB
                     const defaultUser = defaultUserSettings.users.find(du => du.id === fbUser.id);
-                    return { ...defaultUser, ...fbUser }; // Merge default with Firebase data
+                    // Merge default with Firebase data, ensuring allowedZones is an array
+                    return { ...defaultUser, ...fbUser, allowedZones: fbUser.allowedZones || [] };
                 }) : defaultUserSettings.users;
                 userSettings.archiveSchedule = firebaseSettings.archiveSchedule || defaultUserSettings.archiveSchedule;
 
-                // Ensure start date is set if null in Firestore
                 if (!userSettings.archiveSchedule.start) {
                     userSettings.archiveSchedule.start = new Date().toISOString().split('T')[0];
-                    await saveSettings(); // Save updated start date to Firestore
+                    await saveSettings();
                 }
 
             } else {
                 console.warn("No 'global_settings' document found in Firestore. Creating with default settings.");
-                // Set the default start date to today
                 defaultUserSettings.archiveSchedule.start = new Date().toISOString().split('T')[0];
-                userSettings = { ...defaultUserSettings }; // Use the updated default
-                await setDoc(settingsDocRef, userSettings); // Save default settings to Firestore
+                userSettings = { ...defaultUserSettings };
+                await setDoc(settingsDocRef, userSettings);
             }
             renderUserButtons();
         } catch (error) {
@@ -956,7 +952,6 @@
     }
 
     async function saveSettings() {
-        // Ensure the global userSettings object reflects the current UI state for archiving
         userSettings.archiveSchedule.start = document.getElementById('start-date')?.value || userSettings.archiveSchedule.start;
         userSettings.archiveSchedule.interval = document.getElementById('interval-duration')?.value || userSettings.archiveSchedule.interval;
 
@@ -971,31 +966,68 @@
     }
 
     window.saveUsers = async () => {
-        // Update userSettings object from UI input fields
         userSettings.users.forEach((user, index) => {
             const nameInput = document.getElementById(`user-name-edit-${index}`);
             const passwordInput = document.getElementById(`user-password-edit-${index}`);
             if (nameInput) user.name = nameInput.value;
             if (passwordInput) user.password = passwordInput.value;
+
+            // Get selected zones for this user
+            const selectedZones = [];
+            document.querySelectorAll(`.zone-checkbox[data-user-id="${user.id}"]:checked`).forEach(checkbox => {
+                selectedZones.push(checkbox.value);
+            });
+            user.allowedZones = selectedZones;
         });
-        await saveSettings(); // Save the updated userSettings to Firestore
+        await saveSettings();
         renderUserButtons();
-        showAlert('User names and passwords saved successfully!', 'Success');
+        showAlert('User names, passwords, and zone permissions saved successfully!', 'Success');
     };
 
     function renderUserEditor() {
         const container = document.getElementById('user-editor-container');
         container.innerHTML = '';
+        const allZones = ['HLP', 'SCREEN', 'COMPACTION']; // Define all possible zones
+
         userSettings.users.forEach((user, index) => {
             const div = document.createElement('div');
             div.className = 'p-3 border rounded-lg bg-gray-50';
+
+            let zoneCheckboxesHTML = allZones.map(zone => `
+                <label class="inline-flex items-center mr-4">
+                    <input type="checkbox"
+                           id="user-${user.id}-zone-${zone}"
+                           value="${zone}"
+                           ${user.allowedZones.includes(zone) ? 'checked' : ''}
+                           class="form-checkbox h-5 w-5 text-blue-600 zone-checkbox"
+                           data-user-id="${user.id}">
+                    <span class="ml-2">${zone}</span>
+                </label>
+            `).join('');
+
             div.innerHTML = `
                 <label for="user-name-edit-${index}" class="font-semibold text-sm">${user.id}:</label>
                 <input type="text" id="user-name-edit-${index}" value="${user.name}" placeholder="User Name" class="w-full p-2 border rounded-lg mt-1 mb-2">
                 <label for="user-password-edit-${index}" class="font-semibold text-sm">Password:</label>
-                <input type="text" id="user-password-edit-${index}" value="${user.password}" placeholder="User Password" class="w-full p-2 border rounded-lg mt-1">
+                <input type="text" id="user-password-edit-${index}" value="${user.password}" placeholder="User Password" class="w-full p-2 border rounded-lg mt-1 mb-2">
+                <label class="font-semibold text-sm mt-2 block">Allowed Zones (Max 3):</label>
+                <div class="flex flex-wrap gap-2 mt-1">
+                    ${zoneCheckboxesHTML}
+                </div>
             `;
             container.appendChild(div);
+        });
+
+        // Add event listeners to enforce max 3 zones
+        container.querySelectorAll('.zone-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (event) => {
+                const userId = event.target.dataset.userId;
+                const userCheckboxes = container.querySelectorAll(`.zone-checkbox[data-user-id="${userId}"]:checked`);
+                if (userCheckboxes.length > 3) {
+                    showAlert('You can select a maximum of 3 zones per user.', 'Limit Exceeded');
+                    event.target.checked = false; // Uncheck the last selected one
+                }
+            });
         });
     }
 
@@ -1032,7 +1064,6 @@
             closeUserPasswordModal();
             return;
         }
-        // Retrieve the latest user details from the synchronized userSettings
         const latestUser = userSettings.users.find(u => u.id === userForLogin.id);
         if (latestUser && password === latestUser.password) {
             const userNameToLogin = latestUser.name;
@@ -1050,7 +1081,21 @@
         document.getElementById('current-user').innerText = `User: ${currentUser}`;
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('user-interface').classList.remove('hidden');
-        listenForTasks(); // Start listening for PM tasks
+
+        // Get the current user's allowed zones
+        const loggedInUser = userSettings.users.find(u => u.name === currentUser);
+        const userAllowedZones = loggedInUser ? loggedInUser.allowedZones : [];
+
+        // Hide or show zone buttons based on permissions
+        const hlpButton = document.querySelector('button[onclick="selectZone(\'HLP\')"]');
+        const screenButton = document.querySelector('button[onclick="selectZone(\'SCREEN\')"]');
+        const compactionButton = document.querySelector('button[onclick="selectZone(\'COMPACTION\')"]');
+
+        if (hlpButton) hlpButton.classList.toggle('hidden', !userAllowedZones.includes('HLP'));
+        if (screenButton) screenButton.classList.toggle('hidden', !userAllowedZones.includes('SCREEN'));
+        if (compactionButton) compactionButton.classList.toggle('hidden', !userAllowedZones.includes('COMPACTION'));
+
+        listenForTasks();
     }
 
     window.showAdminLogin = () => {
@@ -1066,14 +1111,14 @@
 
     window.loginAdmin = async () => {
         const password = document.getElementById('admin-password').value;
-        if (password === 'Karak@2025') { // Admin password remains hardcoded
+        if (password === 'Karak@2025') {
             currentUser = 'Admin';
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('admin-interface').classList.remove('hidden');
             initializeAdminUI();
-            await checkAndRunArchiveCycle(); // Run archive cycle check on admin login
-            listenForTasks(); // Start listening for PM tasks
-            listenForUserSettingsChanges(); // Start listening for user settings changes for admin
+            await checkAndRunArchiveCycle();
+            listenForTasks();
+            listenForUserSettingsChanges();
         } else {
             showAlert('Incorrect password.');
             document.getElementById('admin-password').value = '';
@@ -1083,32 +1128,30 @@
     window.logout = () => {
         currentUser = null;
         userForLogin = null;
-        if (unsubscribePmTasks) unsubscribePmTasks(); // Stop listening for PM tasks
-        if (unsubscribeUserSettings) unsubscribeUserSettings(); // Stop listening for user settings
+        if (unsubscribePmTasks) unsubscribePmTasks();
+        if (unsubscribeUserSettings) unsubscribeUserSettings();
         document.getElementById('user-interface').classList.add('hidden');
         document.getElementById('admin-interface').classList.add('hidden');
         document.getElementById('login-screen').classList.remove('hidden');
         document.getElementById('admin-password').value = '';
-        renderUserButtons(); // Re-render user buttons to reflect latest settings
+        renderUserButtons();
     };
 
     // --- ADMIN UI & AUTOMATED DATE LOGIC ---
     function initializeAdminUI() {
-        renderUserEditor(); // Render the user editor based on current userSettings
+        renderUserEditor();
         const startDateInput = document.getElementById('start-date');
         const intervalSelect = document.getElementById('interval-duration');
-        const { start, interval } = userSettings.archiveSchedule; // Use the loaded userSettings
+        const { start, interval } = userSettings.archiveSchedule;
 
         if (start && interval) {
             startDateInput.value = start;
             intervalSelect.value = interval;
         } else {
-            // This case should ideally not happen if loadSettings works correctly,
-            // but as a fallback, ensure the UI elements are initialized.
             startDateInput.value = new Date().toISOString().split('T')[0];
             intervalSelect.value = 'weekly';
         }
-        updateArchiveScheduleDisplay(); // Update display immediately
+        updateArchiveScheduleDisplay();
         intervalSelect.addEventListener('change', updateArchiveScheduleDisplay);
         startDateInput.addEventListener('change', updateArchiveScheduleDisplay);
     }
@@ -1120,17 +1163,12 @@
         if (isNaN(startDate.getTime())) return;
         let endDate = calculateEndDate(startDate, intervalSelect.value);
         document.getElementById('end-date-display').textContent = endDate.toLocaleDateString();
-        // The saveSettings call for archive schedule updates happens in saveSettings,
-        // which is triggered by button clicks, not every UI change here.
-        // However, if the user navigates away, these changes won't persist until explicitly saved.
-        // For simplicity, we are not calling saveSettings on every UI change for the schedule.
-        // It's saved when runCycleManually is called, or when other settings are saved.
     }
 
     function calculateEndDate(startDate, interval) {
         let endDate = new Date(startDate);
         if (interval === 'daily') {
-            endDate.setDate(startDate.getDate()); // No change for daily to represent end of day
+            endDate.setDate(startDate.getDate());
         } else if (interval === 'weekly') {
             endDate.setDate(startDate.getDate() + 6);
         } else if (interval === 'monthly') {
@@ -1140,7 +1178,6 @@
         return endDate;
     }
 
-    // Listener for user settings changes (for admin interface)
     function listenForUserSettingsChanges() {
         const settingsDocRef = doc(db, "app_settings", "global_settings");
         unsubscribeUserSettings = onSnapshot(settingsDocRef, (docSnap) => {
@@ -1148,13 +1185,17 @@
                 const firebaseSettings = docSnap.data();
                 userSettings.users = firebaseSettings.users && Array.isArray(firebaseSettings.users) ? firebaseSettings.users.map(fbUser => {
                     const defaultUser = defaultUserSettings.users.find(du => du.id === fbUser.id);
-                    return { ...defaultUser, ...fbUser };
+                    return { ...defaultUser, ...fbUser, allowedZones: fbUser.allowedZones || [] };
                 }) : defaultUserSettings.users;
                 userSettings.archiveSchedule = firebaseSettings.archiveSchedule || defaultUserSettings.archiveSchedule;
 
-                renderUserEditor(); // Re-render user editor to show latest data
-                renderUserButtons(); // Re-render login buttons if names/passwords change
-                updateArchiveScheduleDisplay(); // Update the archive schedule display
+                renderUserEditor();
+                renderUserButtons();
+                updateArchiveScheduleDisplay();
+                // If a user is logged in, re-evaluate their zone buttons in case admin changed permissions
+                if (currentUser && currentUser !== 'Admin') {
+                    showUserDashboard(currentUser);
+                }
             } else {
                 console.warn("Global settings document no longer exists in Firestore.");
             }
@@ -1174,6 +1215,15 @@
     window.closeAlertModal = () => document.getElementById('alert-modal').classList.add('hidden');
 
     window.selectZone = (zone) => {
+        // Ensure the current user has permission for this zone
+        if (currentUser !== 'Admin') {
+            const loggedInUser = userSettings.users.find(u => u.name === currentUser);
+            if (!loggedInUser || !loggedInUser.allowedZones.includes(zone)) {
+                showAlert(`You do not have permission to access the ${zone} zone.`, 'Permission Denied');
+                return;
+            }
+        }
+        
         currentZone = zone;
         document.getElementById('equipment-modal-title').innerText = `Select Equipment for ${zone}`;
         populateEquipmentTable(zone);
@@ -1227,6 +1277,28 @@
 
     // --- DATA HANDLING AND SUBMISSION ---
     window.submitPmTask = async () => {
+        const statusValue = document.querySelector('input[name="status"]:checked')?.value || 'N/A';
+
+        // *** NEW LOGIC FOR DUPLICATE PM CHECK ***
+        const q = query(
+            collection(db, "pm_tasks"),
+            where("tag", "==", selectedEquipment.tag),
+            orderBy("timestamp", "desc"),
+            limit(1)
+        );
+        const lastPmSnapshot = await getDocs(q);
+
+        if (!lastPmSnapshot.empty) {
+            const lastPm = lastPmSnapshot.docs[0].data();
+            // Check if the last PM reported an 'Error' and has NOT been resolved by admin
+            if (lastPm.status === 'Error' && !lastPm.resolvedByAdmin) {
+                showAlert(`Cannot perform PM on ${selectedEquipment.tag}. The previous PM reported an error and requires admin approval to re-work.`, 'PM Blocked');
+                closePmModal();
+                return;
+            }
+        }
+        // *** END NEW LOGIC ***
+
         const task = {
             user: currentUser,
             zone: currentZone,
@@ -1236,9 +1308,10 @@
             vibration: document.querySelector('input[name="vibration"]:checked')?.value || 'N/A',
             heat: document.querySelector('input[name="heat"]:checked')?.value || 'N/A',
             motor_umbrella: document.querySelector('input[name="motor_umbrella"]:checked')?.value || 'N/A',
-            status: document.querySelector('input[name="status"]:checked')?.value || 'N/A',
+            status: statusValue,
             note: document.getElementById('note').value,
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
+            resolvedByAdmin: false // Default to false for all new tasks
         };
         try {
             await addDoc(collection(db, "pm_tasks"), task);
@@ -1248,6 +1321,33 @@
             console.error("Error adding document: ", error);
             showAlert('Failed to save PM task.', 'Error');
         }
+    };
+
+    // Function for admin to mark an error task as resolved
+    window.markPmTaskAsResolved = async (taskId, currentStatus) => {
+        if (currentStatus !== 'Error') {
+            showAlert('Only PM tasks with an "Error" status can be marked as resolved.', 'Invalid Action');
+            return;
+        }
+
+        document.getElementById('confirm-clear-message').innerHTML = `Are you sure you want to mark this PM task as <strong class="text-green-700">resolved by admin</strong>? This will allow users to perform PM on this equipment again.`;
+        const yesButton = document.getElementById('confirm-clear-button-yes');
+        yesButton.onclick = async () => {
+            closeConfirmClearModal();
+            showAlert('Marking task as resolved...', 'Please Wait');
+            const taskRef = doc(db, "pm_tasks", taskId);
+            try {
+                await updateDoc(taskRef, {
+                    resolvedByAdmin: true
+                });
+                showAlert('PM Task marked as resolved successfully!', 'Success');
+            } catch (error) {
+                console.error("Error marking task as resolved: ", error);
+                showAlert('Failed to mark task as resolved.', 'Error');
+            }
+        };
+        yesButton.innerText = "Yes, Mark Resolved";
+        document.getElementById('confirm-clear-modal').classList.remove('hidden');
     };
 
     function listenForTasks() {
@@ -1270,12 +1370,16 @@
     function displayRecentActivities(tasks) {
         const container = document.getElementById('recent-activities');
         container.innerHTML = '';
-        const userTasks = tasks.filter(task => task.user === currentUser); // Filter by current user
-        userTasks.slice(0, 6).forEach(task => { // Show recent 6 for the user
+        const userTasks = tasks.filter(task => task.user === currentUser);
+        userTasks.slice(0, 6).forEach(task => {
             const card = document.createElement('div');
-            card.className = 'bg-white p-4 rounded-lg shadow-md border-l-4 border-blue-500';
+            // Add a visual indicator if the task had an error and is unresolved
+            const borderClass = task.status === 'Error' && !task.resolvedByAdmin ? 'border-l-4 border-red-500' : 'border-l-4 border-blue-500';
+            const statusIndicator = task.status === 'Error' && !task.resolvedByAdmin ? '<span class="text-red-600 font-bold ml-2">(Error - Unresolved)</span>' : '';
+
+            card.className = `bg-white p-4 rounded-lg shadow-md ${borderClass}`;
             card.innerHTML = `
-                <h3 class="font-bold text-lg">${task.tag}</h3>
+                <h3 class="font-bold text-lg">${task.tag}${statusIndicator}</h3>
                 <p class="text-gray-600">${task.description}</p>
                 <div class="mt-2 text-sm text-gray-500">
                     <span>by <strong>${task.user}</strong> on </span>
@@ -1289,14 +1393,25 @@
         const container = document.getElementById('admin-live-activities');
         container.innerHTML = '';
         tasks.slice(0, 10).forEach(task => {
+            const resolutionStatusText = task.status === 'Error' && !task.resolvedByAdmin
+                ? `<span class="text-red-600 font-bold">Error (Unresolved)</span>`
+                : (task.resolvedByAdmin ? `<span class="text-green-600 font-bold">Resolved by Admin</span>` : `<span class="text-green-600 font-bold">OK</span>`);
+
+            const resolveButton = task.status === 'Error' && !task.resolvedByAdmin
+                ? `<button onclick="markPmTaskAsResolved('${task.id}', '${task.status}')" class="ml-4 bg-green-500 text-white text-xs px-3 py-1 rounded hover:bg-green-600 transition">Mark Resolved</button>`
+                : '';
+
             const card = document.createElement('div');
             card.className = 'bg-white p-4 rounded-lg shadow border';
             card.innerHTML = `
                 <h3 class="font-bold text-lg text-blue-700">${task.tag} - ${task.description}</h3>
-                <p class="text-gray-700">Status: <span class="font-semibold">${task.status}</span>, Sound: <span class="font-semibold">${task.sound}</span></p>
-                <div class="mt-2 text-sm text-gray-500">
+                <p class="text-gray-700">Status: <span class="font-semibold">${task.status}</span>, Sound: <span class="font-semibold">${task.sound}</span>, Vibration: <span class="font-semibold">${task.vibration}</span>, Heat: <span class="font-semibold">${task.heat}</span>, Motor Umbrella: <span class="font-semibold">${task.motor_umbrella}</span></p>
+                <p class="text-gray-700"><strong>Overall Status:</strong> ${resolutionStatusText}</p>
+                <p class="text-gray-700 text-sm">Note: ${task.note || 'N/A'}</p>
+                <div class="mt-2 text-sm text-gray-500 flex items-center">
                     <span>by <strong>${task.user}</strong> at </span>
                     <span>${task.timestamp ? task.timestamp.toDate().toLocaleString() : 'Just now'}</span>
+                    ${resolveButton}
                 </div>`;
             container.appendChild(card);
         });
@@ -1310,15 +1425,26 @@
                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Zone</th>
                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tag</th>
                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Resolved</th>
                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
+                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                      </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
         allTasks.forEach(task => {
+            const isErrorAndUnresolved = task.status === 'Error' && !task.resolvedByAdmin;
+            const resolveButton = isErrorAndUnresolved
+                ? `<button onclick="markPmTaskAsResolved('${task.id}', '${task.status}')" class="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600 transition">Mark Resolved</button>`
+                : '';
+
             tableHTML += `<tr>
                        <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
                        <td class="px-2 py-2 whitespace-nowrap">${task.zone || 'N/A'}</td>
                        <td class="px-2 py-2 whitespace-nowrap">${task.tag}</td>
                        <td class="px-2 py-2 whitespace-nowrap max-w-xs truncate">${task.description}</td>
+                       <td class="px-2 py-2 whitespace-nowrap">${task.status || 'N/A'}</td>
+                       <td class="px-2 py-2 whitespace-nowrap">${task.resolvedByAdmin ? 'Yes' : 'No'}</td>
                        <td class="px-2 py-2 whitespace-nowrap">${task.timestamp ? task.timestamp.toDate().toLocaleString() : ''}</td>
+                       <td class="px-2 py-2 whitespace-nowrap">${resolveButton}</td>
                  </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -1334,7 +1460,7 @@
         return { name: 'Green', text: 'OK' };
     }
 
-    const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Note", "Timestamp", "Color code"];
+    const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Note", "Timestamp", "Color code", "Resolved By Admin"];
 
     window.exportToExcel = () => {
         const tasksToExport = allTasks;
@@ -1356,7 +1482,8 @@
                 task.status || 'N/A',
                 `"${(task.note || '').replace(/"/g, '""')}"`,
                 task.timestamp ? `"${task.timestamp.toDate().toLocaleString()}"` : '',
-                colorCode.name
+                colorCode.name,
+                task.resolvedByAdmin ? 'Yes' : 'No'
             ].join(",");
             csvContent += row + "\r\n";
         });
@@ -1389,7 +1516,8 @@
                 task.sound || 'N/A', task.vibration || 'N/A', task.heat || 'N/A',
                 task.motor_umbrella || 'N/A', task.status || 'N/A', task.note || '',
                 task.timestamp ? task.timestamp.toDate().toLocaleString() : '',
-                colorCode.name
+                colorCode.name,
+                task.resolvedByAdmin ? 'Yes' : 'No'
             ];
         });
         doc.autoTable({
@@ -1397,7 +1525,7 @@
             body: body,
             startY: 10,
             styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
-            columnStyles: { 3: { cellWidth: 40 }, 9: { cellWidth: 40 }, 11: { halign: 'center' } },
+            columnStyles: { 3: { cellWidth: 40 }, 9: { cellWidth: 30 }, 11: { halign: 'center' }, 12: { halign: 'center' } },
             didDrawCell: function (data) {
                 if (data.column.dataKey === 11) {
                     const colorName = data.cell.raw;
@@ -1453,12 +1581,11 @@
     }
 
     async function checkAndRunArchiveCycle(forceRun = false) {
-        // Ensure userSettings.archiveSchedule is up-to-date from UI fields if changed
         userSettings.archiveSchedule.start = document.getElementById('start-date').value;
         userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
-        await saveSettings(); // Persist any UI changes to schedule before running
+        await saveSettings();
 
-        const { archiveSchedule } = userSettings; // Get the latest schedule from userSettings
+        const { archiveSchedule } = userSettings;
         if (!archiveSchedule.start || !archiveSchedule.interval) {
             console.log("Archive schedule not configured. Skipping cycle.");
             return;
@@ -1473,7 +1600,6 @@
             const cycleStartDate = new Date(startDate);
             const cycleEndDate = new Date(endDate);
             showAlert('Archive cycle running...', 'Processing');
-            // Ensure endTimestamp includes the entire end day
             const endTimestamp = Timestamp.fromDate(new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000) - 1));
             const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", Timestamp.fromDate(cycleStartDate)), where("timestamp", "<=", endTimestamp));
 
@@ -1489,10 +1615,9 @@
                     await batch.commit();
                 }
 
-                // Update the start date for the next cycle
                 const newStartDate = new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000));
                 userSettings.archiveSchedule.start = newStartDate.toISOString().split('T')[0];
-                await saveSettings(); // Save the new archive start date to Firestore
+                await saveSettings();
 
                 updateArchiveScheduleDisplay();
                 showAlert(`Archive cycle complete. ${tasksToDelete.length} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted. The new cycle has been set.`, 'Success');
@@ -1509,7 +1634,7 @@
     // --- INITIALIZATION ---
     window.onload = async () => {
         loadEquipmentData();
-        await loadSettings(); // Ensure settings are loaded from Firebase before rendering buttons
+        await loadSettings();
         console.log("Application initialized successfully.");
     };
     </script>
