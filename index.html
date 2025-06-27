@@ -184,6 +184,9 @@
             <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg">
                 <h2 class="text-2xl font-bold mb-2">PM Task for <span id="pm-tag-number" class="text-blue-600"></span></h2>
                 <p class="text-lg text-gray-600 mb-6" id="pm-equipment-description"></p>
+
+                <div id="pm-warning-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+                    </div>
                 <div class="space-y-4">
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <label class="font-semibold text-lg">Sound</label>
@@ -1294,8 +1297,43 @@
         document.getElementById('tag-search').value = '';
     };
 
-    window.selectEquipment = (tag, description) => {
+    window.selectEquipment = async (tag, description) => {
         selectedEquipment = { tag, description };
+
+        // --- NEW LOGIC TO CHECK FOR RECENT PM ---
+        const warningDiv = document.getElementById('pm-warning-message');
+        
+        // Define the start of today for the query
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startOfToday = Timestamp.fromDate(today);
+
+        // Query for any PM task on this TAG number from today onwards
+        const q = query(
+            collection(db, "pm_tasks"),
+            where("tag", "==", tag),
+            where("timestamp", ">=", startOfToday),
+            orderBy("timestamp", "desc"),
+            limit(1)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            // A PM was found for today. Show the warning.
+            const lastTask = querySnapshot.docs[0].data();
+            warningDiv.innerHTML = `
+                <strong class="font-bold">Warning:</strong>
+                <span class="block sm:inline">PM for this equipment was already performed by <strong>${lastTask.user}</strong> today at ${lastTask.timestamp.toDate().toLocaleTimeString()}.</span>
+            `;
+            warningDiv.classList.remove('hidden');
+        } else {
+            // No PM found for today. Ensure the warning is hidden.
+            warningDiv.classList.add('hidden');
+        }
+        // --- END OF NEW LOGIC ---
+
+        // These lines remain the same
         document.getElementById('pm-tag-number').innerText = tag;
         document.getElementById('pm-equipment-description').innerText = description;
         closeEquipmentModal();
@@ -1307,6 +1345,9 @@
         const form = document.getElementById('pm-modal');
         form.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
         form.querySelector('textarea').value = '';
+        
+        // Add this line to ensure the warning is hidden on close
+        document.getElementById('pm-warning-message').classList.add('hidden');
     };
 
     function populateEquipmentTable(zone) {
