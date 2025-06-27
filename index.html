@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APC Preventive Maintenance</title>
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -17,9 +20,36 @@
             background-size: cover;
             background-position: center;
         }
+        /* Simple loading spinner */
+        #loader {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Hide scrollbar for clean look */
+        #recent-activities-container::-webkit-scrollbar {
+            display: none;
+        }
+        #recent-activities-container {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
     </style>
 </head>
 <body class="bg-gray-100">
+
+    <!-- Loading Spinner Overlay -->
+    <div id="loader-overlay" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[100]">
+        <div id="loader"></div>
+    </div>
+
 
     <div id="app" class="h-screen w-screen">
 
@@ -48,6 +78,14 @@
             <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
                 <h2 class="text-xl font-bold mb-4">Login as <span id="user-password-title" class="text-blue-600"></span></h2>
                 <input type="password" id="user-password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4">
+                
+                <!-- NEW: Remember Me Checkbox -->
+                <div class="flex items-center justify-start mb-4">
+                    <input id="remember-me-checkbox" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="remember-me-checkbox" class="ml-2 block text-sm text-gray-900">Remember me on this device</label>
+                </div>
+                <!-- END NEW -->
+
                 <div class="flex justify-center space-x-4">
                     <button onclick="closeUserPasswordModal()" class="bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-600 transition">Cancel</button>
                     <button onclick="loginUserWithPassword()" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition">Login</button>
@@ -76,9 +114,24 @@
                     </div>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Recent PM Activities</h2>
-                    <div id="recent-activities" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- MODIFIED: Added scroll buttons -->
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Recent PM Activities</h2>
+                        <div class="flex space-x-2">
+                            <button onclick="scrollRecentActivities(-200)" aria-label="Scroll Up" class="bg-gray-200 hover:bg-gray-300 text-gray-800 p-2 rounded-full transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                            </button>
+                            <button onclick="scrollRecentActivities(200)" aria-label="Scroll Down" class="bg-gray-200 hover:bg-gray-300 text-gray-800 p-2 rounded-full transition">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
                         </div>
+                    </div>
+                    <!-- MODIFIED: Added container for scrolling -->
+                    <div id="recent-activities-container" class="h-[32rem] overflow-y-auto">
+                        <div id="recent-activities" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            <!-- Cards will be inserted here -->
+                        </div>
+                    </div>
                 </div>
             </main>
              <footer class="bg-gray-200 text-center p-4">
@@ -98,6 +151,29 @@
                 </div>
             </header>
             <main class="flex-grow p-6 bg-gray-50 overflow-y-auto">
+                <!-- NEW: Admin Analytics Section -->
+                 <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Dashboard Analytics</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="bg-blue-100 p-4 rounded-lg shadow">
+                            <h3 class="font-bold text-3xl text-blue-800" id="analytics-total-today">0</h3>
+                            <p class="text-blue-600">Tasks Logged Today</p>
+                        </div>
+                        <div class="bg-green-100 p-4 rounded-lg shadow">
+                            <h3 class="font-bold text-3xl text-green-800" id="analytics-total-week">0</h3>
+                            <p class="text-green-600">Tasks This Week</p>
+                        </div>
+                        <div class="bg-red-100 p-4 rounded-lg shadow">
+                            <h3 class="font-bold text-3xl text-red-800" id="analytics-unresolved-errors">0</h3>
+                            <p class="text-red-600">Unresolved Errors</p>
+                        </div>
+                        <div class="bg-yellow-100 p-4 rounded-lg shadow">
+                            <h3 class="font-bold text-3xl text-yellow-800" id="analytics-users-active">0</h3>
+                            <p class="text-yellow-600">Users Active Today</p>
+                        </div>
+                    </div>
+                </div>
+
                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h2 class="text-2xl font-bold text-gray-800 mb-4">Live PM Activities</h2>
@@ -106,7 +182,12 @@
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800 mb-4">PM History & Reports</h2>
+                             <h2 class="text-2xl font-bold text-gray-800 mb-4">PM History & Reports</h2>
+                             <!-- NEW: Filter controls -->
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border">
+                                 <input type="text" id="history-search-text" placeholder="Search by User or TAG..." class="p-2 border rounded-lg w-full">
+                                 <input type="date" id="history-search-date" class="p-2 border rounded-lg w-full">
+                             </div>
                              <div class="flex space-x-4 my-4">
                                 <button onclick="exportToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export All to Excel</button>
                                 <button onclick="exportToPDF()" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Export All to PDF</button>
@@ -186,7 +267,8 @@
                 <p class="text-lg text-gray-600 mb-6" id="pm-equipment-description"></p>
 
                 <div id="pm-warning-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
-                    </div>
+                </div>
+                
                 <div class="space-y-4">
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <label class="font-semibold text-lg">Sound</label>
@@ -285,7 +367,7 @@
     let unsubscribePmTasks = null;
     let unsubscribeUserSettings = null;
 
-    // Default user settings - NOW WITH allowedZones
+    // Default user settings
     const defaultUserSettings = {
         users: [
             { id: 'user1', name: 'Khaled', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700', allowedZones: ['HLP', 'SCREEN', 'COMPACTION'] },
@@ -960,6 +1042,25 @@
 16-85-600M1,de-dusting bag house filter throttle valve actuator
 16-85-600M2,de-dusting bag house filter throttle valve actuator`;
 
+    // --- UI HELPER FUNCTIONS ---
+    const showLoader = () => document.getElementById('loader-overlay').classList.remove('hidden');
+    const hideLoader = () => document.getElementById('loader-overlay').classList.add('hidden');
+    
+    // --- LOCAL STORAGE HELPERS FOR "REMEMBER ME" ---
+    function saveUserCredentials(userId, password) {
+        const credentials = { password: password };
+        localStorage.setItem(`pm-user-${userId}`, JSON.stringify(credentials));
+    }
+
+    function getSavedUserCredentials(userId) {
+        const saved = localStorage.getItem(`pm-user-${userId}`);
+        return saved ? JSON.parse(saved) : null;
+    }
+
+    function clearUserCredentials(userId) {
+        localStorage.removeItem(`pm-user-${userId}`);
+    }
+
     // --- DATA LOADING ---
     function loadEquipmentData() {
         const dataMap = { HLP: hlpCsvData, SCREEN: screenCsvData, COMPACTION: compactionCsvData };
@@ -978,61 +1079,57 @@
         }
     }
 
-    // --- USER AND SCHEDULE SETTINGS (NOW FIREBASE-BACKED) ---
+    // --- USER AND SCHEDULE SETTINGS (FIREBASE-BACKED) ---
     async function loadSettings() {
+        showLoader();
         const settingsDocRef = doc(db, "app_settings", "global_settings");
         try {
             const docSnap = await getDoc(settingsDocRef);
-
             if (docSnap.exists()) {
                 const firebaseSettings = docSnap.data();
                 userSettings.users = firebaseSettings.users && Array.isArray(firebaseSettings.users) ? firebaseSettings.users.map(fbUser => {
                     const defaultUser = defaultUserSettings.users.find(du => du.id === fbUser.id);
-                    // Merge default with Firebase data, ensuring allowedZones is an array
                     return { ...defaultUser, ...fbUser, allowedZones: fbUser.allowedZones || [] };
                 }) : defaultUserSettings.users;
                 userSettings.archiveSchedule = firebaseSettings.archiveSchedule || defaultUserSettings.archiveSchedule;
-
                 if (!userSettings.archiveSchedule.start) {
                     userSettings.archiveSchedule.start = new Date().toISOString().split('T')[0];
                     await saveSettings();
                 }
-
             } else {
-                console.warn("No 'global_settings' document found in Firestore. Creating with default settings.");
+                console.warn("No 'global_settings' document found. Creating with defaults.");
                 defaultUserSettings.archiveSchedule.start = new Date().toISOString().split('T')[0];
                 userSettings = { ...defaultUserSettings };
                 await setDoc(settingsDocRef, userSettings);
             }
             renderUserButtons();
         } catch (error) {
-            console.error("Error loading settings from Firestore:", error);
+            console.error("Error loading settings:", error);
             showAlert('Failed to load application settings.', 'Error');
+        } finally {
+            hideLoader();
         }
     }
 
     async function saveSettings() {
         userSettings.archiveSchedule.start = document.getElementById('start-date')?.value || userSettings.archiveSchedule.start;
         userSettings.archiveSchedule.interval = document.getElementById('interval-duration')?.value || userSettings.archiveSchedule.interval;
-
         const settingsDocRef = doc(db, "app_settings", "global_settings");
         try {
             await setDoc(settingsDocRef, userSettings);
-            console.log("Settings saved to Firestore.");
         } catch (error) {
-            console.error("Error saving settings to Firestore:", error);
-            showAlert('Failed to save settings to Firebase.', 'Error');
+            console.error("Error saving settings:", error);
+            showAlert('Failed to save settings.', 'Error');
         }
     }
 
     window.saveUsers = async () => {
+        showLoader();
         userSettings.users.forEach((user, index) => {
             const nameInput = document.getElementById(`user-name-edit-${index}`);
             const passwordInput = document.getElementById(`user-password-edit-${index}`);
             if (nameInput) user.name = nameInput.value;
             if (passwordInput) user.password = passwordInput.value;
-
-            // Get selected zones for this user
             const selectedZones = [];
             document.querySelectorAll(`.zone-checkbox[data-user-id="${user.id}"]:checked`).forEach(checkbox => {
                 selectedZones.push(checkbox.value);
@@ -1041,56 +1138,35 @@
         });
         await saveSettings();
         renderUserButtons();
-        showAlert('User names, passwords, and zone permissions saved successfully!', 'Success');
+        hideLoader();
+        showAlert('User settings saved!', 'Success');
     };
 
     function renderUserEditor() {
         const container = document.getElementById('user-editor-container');
+        if(!container) return;
         container.innerHTML = '';
-        const allZones = ['HLP', 'SCREEN', 'COMPACTION']; // Define all possible zones
-
+        const allZones = ['HLP', 'SCREEN', 'COMPACTION'];
         userSettings.users.forEach((user, index) => {
             const div = document.createElement('div');
             div.className = 'p-3 border rounded-lg bg-gray-50';
-
             let zoneCheckboxesHTML = allZones.map(zone => `
                 <label class="inline-flex items-center mr-4">
-                    <input type="checkbox"
-                           id="user-${user.id}-zone-${zone}"
-                           value="${zone}"
-                           ${user.allowedZones.includes(zone) ? 'checked' : ''}
-                           class="form-checkbox h-5 w-5 text-blue-600 zone-checkbox"
-                           data-user-id="${user.id}">
+                    <input type="checkbox" value="${zone}" ${user.allowedZones.includes(zone) ? 'checked' : ''} class="form-checkbox h-5 w-5 text-blue-600 zone-checkbox" data-user-id="${user.id}">
                     <span class="ml-2">${zone}</span>
-                </label>
-            `).join('');
-
+                </label>`).join('');
             div.innerHTML = `
                 <label for="user-name-edit-${index}" class="font-semibold text-sm">${user.id}:</label>
-                <input type="text" id="user-name-edit-${index}" value="${user.name}" placeholder="User Name" class="w-full p-2 border rounded-lg mt-1 mb-2">
+                <input type="text" id="user-name-edit-${index}" value="${user.name}" class="w-full p-2 border rounded-lg mt-1 mb-2">
                 <label for="user-password-edit-${index}" class="font-semibold text-sm">Password:</label>
-                <input type="text" id="user-password-edit-${index}" value="${user.password}" placeholder="User Password" class="w-full p-2 border rounded-lg mt-1 mb-2">
-                <label class="font-semibold text-sm mt-2 block">Allowed Zones (Max 3):</label>
-                <div class="flex flex-wrap gap-2 mt-1">
-                    ${zoneCheckboxesHTML}
-                </div>
+                <input type="text" id="user-password-edit-${index}" value="${user.password}" class="w-full p-2 border rounded-lg mt-1 mb-2">
+                <label class="font-semibold text-sm mt-2 block">Allowed Zones:</label>
+                <div class="flex flex-wrap gap-2 mt-1">${zoneCheckboxesHTML}</div>
             `;
             container.appendChild(div);
         });
-
-        // Add event listeners to enforce max 3 zones
-        container.querySelectorAll('.zone-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', (event) => {
-                const userId = event.target.dataset.userId;
-                const userCheckboxes = container.querySelectorAll(`.zone-checkbox[data-user-id="${userId}"]:checked`);
-                if (userCheckboxes.length > 3) {
-                    showAlert('You can select a maximum of 3 zones per user.', 'Limit Exceeded');
-                    event.target.checked = false; // Uncheck the last selected one
-                }
-            });
-        });
     }
-
+    
     function renderUserButtons() {
         const container = document.getElementById('user-buttons-container');
         container.innerHTML = '';
@@ -1103,12 +1179,33 @@
         });
     }
 
-    // --- LOGIN/LOGOUT ---
+    // --- LOGIN/LOGOUT & UI FLOW ---
     window.showUserPasswordPrompt = (user) => {
+        // Check for saved credentials FIRST
+        const savedCreds = getSavedUserCredentials(user.id);
+        const latestUser = userSettings.users.find(u => u.id === user.id);
+
+        if (savedCreds && latestUser && savedCreds.password === latestUser.password) {
+            // Password matches and is remembered, log in directly
+            showLoader();
+            setTimeout(() => { // Use timeout to allow loader to show
+                showUserDashboard(latestUser.name);
+                hideLoader();
+            }, 200);
+            return; // Skip showing the modal
+        }
+        
+        // If admin changed password, savedCreds won't match. Clear the old one.
+        if(savedCreds) {
+             clearUserCredentials(user.id);
+        }
+
+        // If no valid saved password, show the modal as usual
         userForLogin = user;
         document.getElementById('user-password-title').innerText = user.name;
         document.getElementById('user-password-modal').classList.remove('hidden');
         document.getElementById('user-password').focus();
+        document.getElementById('remember-me-checkbox').checked = false; // Reset checkbox state
     };
 
     window.closeUserPasswordModal = () => {
@@ -1126,6 +1223,12 @@
         }
         const latestUser = userSettings.users.find(u => u.id === userForLogin.id);
         if (latestUser && password === latestUser.password) {
+            const rememberMe = document.getElementById('remember-me-checkbox').checked;
+            if (rememberMe) {
+                saveUserCredentials(latestUser.id, password);
+            } else {
+                clearUserCredentials(latestUser.id);
+            }
             const userNameToLogin = latestUser.name;
             closeUserPasswordModal();
             showUserDashboard(userNameToLogin);
@@ -1142,11 +1245,9 @@
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('user-interface').classList.remove('hidden');
 
-        // Get the current user's allowed zones
         const loggedInUser = userSettings.users.find(u => u.name === currentUser);
         const userAllowedZones = loggedInUser ? loggedInUser.allowedZones : [];
 
-        // Hide or show zone buttons based on permissions
         const hlpButton = document.querySelector('button[onclick="selectZone(\'HLP\')"]');
         const screenButton = document.querySelector('button[onclick="selectZone(\'SCREEN\')"]');
         const compactionButton = document.querySelector('button[onclick="selectZone(\'COMPACTION\')"]');
@@ -1170,8 +1271,8 @@
     };
 
     window.loginAdmin = async () => {
+        showLoader();
         const password = document.getElementById('admin-password').value;
-        // Current date is Friday, June 27, 2025
         if (password === 'Karak@2025') { 
             currentUser = 'Admin';
             document.getElementById('login-screen').classList.add('hidden');
@@ -1180,12 +1281,14 @@
             await checkAndRunArchiveCycle();
             listenForTasks();
             listenForUserSettingsChanges();
+            setupAdminFilters();
         } else {
             showAlert('Incorrect password.');
             document.getElementById('admin-password').value = '';
         }
+        hideLoader();
     };
-
+    
     window.logout = () => {
         currentUser = null;
         userForLogin = null;
@@ -1253,12 +1356,9 @@
                 renderUserEditor();
                 renderUserButtons();
                 updateArchiveScheduleDisplay();
-                // If a user is logged in, re-evaluate their zone buttons in case admin changed permissions
                 if (currentUser && currentUser !== 'Admin') {
                     showUserDashboard(currentUser);
                 }
-            } else {
-                console.warn("Global settings document no longer exists in Firestore.");
             }
         }, (error) => {
             console.error("Firebase settings snapshot error: ", error);
@@ -1266,7 +1366,7 @@
         });
     }
 
-    // --- UI & MODALS ---
+    // --- MODALS AND ALERTS ---
     window.showAlert = (message, title = 'Alert') => {
         document.getElementById('alert-title').innerText = title;
         document.getElementById('alert-message').innerText = message;
@@ -1276,7 +1376,6 @@
     window.closeAlertModal = () => document.getElementById('alert-modal').classList.add('hidden');
 
     window.selectZone = (zone) => {
-        // Ensure the current user has permission for this zone
         if (currentUser !== 'Admin') {
             const loggedInUser = userSettings.users.find(u => u.name === currentUser);
             if (!loggedInUser || !loggedInUser.allowedZones.includes(zone)) {
@@ -1299,16 +1398,11 @@
 
     window.selectEquipment = async (tag, description) => {
         selectedEquipment = { tag, description };
-
-        // --- NEW LOGIC TO CHECK FOR RECENT PM ---
         const warningDiv = document.getElementById('pm-warning-message');
-        
-        // Define the start of today for the query
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const startOfToday = Timestamp.fromDate(today);
 
-        // Query for any PM task on this TAG number from today onwards
         const q = query(
             collection(db, "pm_tasks"),
             where("tag", "==", tag),
@@ -1320,7 +1414,6 @@
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-            // A PM was found for today. Show the warning.
             const lastTask = querySnapshot.docs[0].data();
             warningDiv.innerHTML = `
                 <strong class="font-bold">Warning:</strong>
@@ -1328,12 +1421,9 @@
             `;
             warningDiv.classList.remove('hidden');
         } else {
-            // No PM found for today. Ensure the warning is hidden.
             warningDiv.classList.add('hidden');
         }
-        // --- END OF NEW LOGIC ---
 
-        // These lines remain the same
         document.getElementById('pm-tag-number').innerText = tag;
         document.getElementById('pm-equipment-description').innerText = description;
         closeEquipmentModal();
@@ -1345,8 +1435,6 @@
         const form = document.getElementById('pm-modal');
         form.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
         form.querySelector('textarea').value = '';
-        
-        // Add this line to ensure the warning is hidden on close
         document.getElementById('pm-warning-message').classList.add('hidden');
     };
 
@@ -1373,33 +1461,9 @@
         searchInput.onkeyup = () => renderTable(searchInput.value);
         renderTable();
     }
-
+    
     // --- DATA HANDLING AND SUBMISSION ---
     window.submitPmTask = async () => {
-        const statusValue = document.querySelector('input[name="status"]:checked')?.value || 'N/A';
-
-        /*
-        // *** NEW LOGIC FOR DUPLICATE PM CHECK - COMMENTED OUT FOR DEBUGGING ***
-        const q = query(
-            collection(db, "pm_tasks"),
-            where("tag", "==", selectedEquipment.tag),
-            orderBy("timestamp", "desc"),
-            limit(1)
-        );
-        const lastPmSnapshot = await getDocs(q);
-
-        if (!lastPmSnapshot.empty) {
-            const lastPm = lastPmSnapshot.docs[0].data();
-            // Check if the last PM reported an 'Error' and has NOT been resolved by admin
-            if (lastPm.status === 'Error' && !lastPm.resolvedByAdmin) {
-                showAlert(`Cannot perform PM on ${selectedEquipment.tag}. The previous PM reported an error and requires admin approval to re-work.`, 'PM Blocked');
-                closePmModal();
-                return; 
-            }
-        }
-        // *** END NEW LOGIC ***
-        */
-
         const task = {
             user: currentUser,
             zone: currentZone,
@@ -1409,10 +1473,10 @@
             vibration: document.querySelector('input[name="vibration"]:checked')?.value || 'N/A',
             heat: document.querySelector('input[name="heat"]:checked')?.value || 'N/A',
             motor_umbrella: document.querySelector('input[name="motor_umbrella"]:checked')?.value || 'N/A',
-            status: statusValue,
+            status: document.querySelector('input[name="status"]:checked')?.value || 'N/A',
             note: document.getElementById('note').value,
             timestamp: serverTimestamp(),
-            resolvedByAdmin: false // Default to false for all new tasks
+            resolvedByAdmin: false
         };
         try {
             await addDoc(collection(db, "pm_tasks"), task);
@@ -1424,27 +1488,25 @@
         }
     };
 
-    // Function for admin to mark an error task as resolved
     window.markPmTaskAsResolved = async (taskId, currentStatus) => {
         if (currentStatus !== 'Error') {
             showAlert('Only PM tasks with an "Error" status can be marked as resolved.', 'Invalid Action');
             return;
         }
-
         document.getElementById('confirm-clear-message').innerHTML = `Are you sure you want to mark this PM task as <strong class="text-green-700">resolved by admin</strong>? This will allow users to perform PM on this equipment again.`;
         const yesButton = document.getElementById('confirm-clear-button-yes');
         yesButton.onclick = async () => {
             closeConfirmClearModal();
-            showAlert('Marking task as resolved...', 'Please Wait');
+            showLoader();
             const taskRef = doc(db, "pm_tasks", taskId);
             try {
-                await updateDoc(taskRef, {
-                    resolvedByAdmin: true
-                });
+                await updateDoc(taskRef, { resolvedByAdmin: true });
                 showAlert('PM Task marked as resolved successfully!', 'Success');
             } catch (error) {
                 console.error("Error marking task as resolved: ", error);
                 showAlert('Failed to mark task as resolved.', 'Error');
+            } finally {
+                hideLoader();
             }
         };
         yesButton.innerText = "Yes, Mark Resolved";
@@ -1456,7 +1518,10 @@
         unsubscribePmTasks = onSnapshot(q, (snapshot) => {
             allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             if (currentUser === 'Admin') {
-                displayAdminHistory();
+                updateAdminAnalytics(allTasks);
+                const textFilter = document.getElementById('history-search-text')?.value || '';
+                const dateFilter = document.getElementById('history-search-date')?.value || '';
+                displayAdminHistory(textFilter, dateFilter);
                 displayAdminLive(allTasks);
             } else if (currentUser) {
                 displayRecentActivities(allTasks);
@@ -1468,16 +1533,19 @@
     }
 
     // --- DISPLAY FUNCTIONS ---
+    window.scrollRecentActivities = (amount) => {
+        const container = document.getElementById('recent-activities-container');
+        container.scrollBy({ top: amount, behavior: 'smooth' });
+    };
+
     function displayRecentActivities(tasks) {
         const container = document.getElementById('recent-activities');
         container.innerHTML = '';
         const userTasks = tasks.filter(task => task.user === currentUser);
-        userTasks.slice(0, 6).forEach(task => {
+        userTasks.slice(0, 20).forEach(task => { // Increased number of tasks shown
             const card = document.createElement('div');
-            // Add a visual indicator if the task had an error and is unresolved
             const borderClass = task.status === 'Error' && !task.resolvedByAdmin ? 'border-l-4 border-red-500' : 'border-l-4 border-blue-500';
             const statusIndicator = task.status === 'Error' && !task.resolvedByAdmin ? '<span class="text-red-600 font-bold ml-2">(Error - Unresolved)</span>' : '';
-
             card.className = `bg-white p-4 rounded-lg shadow-md ${borderClass}`;
             card.innerHTML = `
                 <h3 class="font-bold text-lg">${task.tag}${statusIndicator}</h3>
@@ -1497,11 +1565,9 @@
             const resolutionStatusText = task.status === 'Error' && !task.resolvedByAdmin
                 ? `<span class="text-red-600 font-bold">Error (Unresolved)</span>`
                 : (task.resolvedByAdmin ? `<span class="text-green-600 font-bold">Resolved by Admin</span>` : `<span class="text-green-600 font-bold">OK</span>`);
-
             const resolveButton = task.status === 'Error' && !task.resolvedByAdmin
                 ? `<button onclick="markPmTaskAsResolved('${task.id}', '${task.status}')" class="ml-4 bg-green-500 text-white text-xs px-3 py-1 rounded hover:bg-green-600 transition">Mark Resolved</button>`
                 : '';
-
             const card = document.createElement('div');
             card.className = 'bg-white p-4 rounded-lg shadow border';
             card.innerHTML = `
@@ -1518,8 +1584,25 @@
         });
     }
 
-    function displayAdminHistory() {
+    function displayAdminHistory(filterText = '', filterDate = '') {
         const container = document.getElementById('admin-history');
+        if (!container) return;
+
+        let filteredTasks = allTasks;
+        if (filterText) {
+            const lowerFilterText = filterText.toLowerCase();
+            filteredTasks = filteredTasks.filter(task => 
+                task.user.toLowerCase().includes(lowerFilterText) || 
+                task.tag.toLowerCase().includes(lowerFilterText)
+            );
+        }
+        if (filterDate) {
+            filteredTasks = filteredTasks.filter(task => {
+                if (!task.timestamp) return false;
+                return task.timestamp.toDate().toISOString().split('T')[0] === filterDate;
+            });
+        }
+
         let tableHTML = `<table class="min-w-full divide-y divide-gray-200">
                      <thead class="bg-gray-50"><tr>
                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Done By</th>
@@ -1531,12 +1614,11 @@
                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                      </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
-        allTasks.forEach(task => {
+        filteredTasks.forEach(task => {
             const isErrorAndUnresolved = task.status === 'Error' && !task.resolvedByAdmin;
             const resolveButton = isErrorAndUnresolved
                 ? `<button onclick="markPmTaskAsResolved('${task.id}', '${task.status}')" class="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600 transition">Mark Resolved</button>`
                 : '';
-
             tableHTML += `<tr>
                        <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
                        <td class="px-2 py-2 whitespace-nowrap">${task.zone || 'N/A'}</td>
@@ -1551,8 +1633,36 @@
         tableHTML += `</tbody></table>`;
         container.innerHTML = tableHTML;
     }
+    
+    // --- ADMIN ANALYTICS, FILTERS, AND REPORTS ---
+    function updateAdminAnalytics(tasks) {
+        if (!tasks || tasks.length === 0 || !document.getElementById('analytics-total-today')) return;
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+        startOfWeek.setHours(0,0,0,0);
 
-    // --- REPORTING & ADMIN FEATURES ---
+        const tasksToday = tasks.filter(t => t.timestamp && t.timestamp.toDate() >= startOfToday);
+        const tasksWeek = tasks.filter(t => t.timestamp && t.timestamp.toDate() >= startOfWeek);
+        const unresolvedErrors = tasks.filter(t => t.status === 'Error' && !t.resolvedByAdmin);
+        const activeUsersToday = new Set(tasksToday.map(t => t.user)).size;
+
+        document.getElementById('analytics-total-today').textContent = tasksToday.length;
+        document.getElementById('analytics-total-week').textContent = tasksWeek.length;
+        document.getElementById('analytics-unresolved-errors').textContent = unresolvedErrors.length;
+        document.getElementById('analytics-users-active').textContent = activeUsersToday;
+    }
+
+    function setupAdminFilters() {
+        const textFilter = document.getElementById('history-search-text');
+        const dateFilter = document.getElementById('history-search-date');
+        const applyFilters = () => {
+            displayAdminHistory(textFilter.value, dateFilter.value);
+        };
+        textFilter.addEventListener('keyup', applyFilters);
+        dateFilter.addEventListener('change', applyFilters);
+    }
+
     function getTaskColorCode(task) {
         const errors = [task.sound, task.vibration, task.heat, task.motor_umbrella, task.status]
             .filter(v => v === 'Error').length;
@@ -1565,9 +1675,7 @@
 
     window.exportToExcel = () => {
         const tasksToExport = allTasks;
-        if (tasksToExport.length === 0) {
-            return showAlert("No data to export.");
-        }
+        if (tasksToExport.length === 0) return showAlert("No data to export.");
         let csvContent = reportHeaders.join(",") + "\r\n";
         tasksToExport.forEach(task => {
             const colorCode = getTaskColorCode(task);
@@ -1605,9 +1713,7 @@
 
     window.exportToPDF = () => {
         const tasksToExport = allTasks;
-        if (tasksToExport.length === 0) {
-            return showAlert("No data to export.");
-        }
+        if (tasksToExport.length === 0) return showAlert("No data to export.");
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('landscape');
         const body = tasksToExport.map(task => {
@@ -1658,7 +1764,7 @@
 
     async function clearAllDataConfirmed() {
         closeConfirmClearModal();
-        showAlert('Deleting all data...', 'Please Wait');
+        showLoader();
         try {
             const snapshot = await getDocs(collection(db, "pm_tasks"));
             if (snapshot.empty) {
@@ -1674,6 +1780,8 @@
         } catch (error) {
             console.error("Error deleting all documents: ", error);
             showAlert("Failed to delete all data.", "Error");
+        } finally {
+            hideLoader();
         }
     };
 
@@ -1685,13 +1793,8 @@
         userSettings.archiveSchedule.start = document.getElementById('start-date').value;
         userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
         await saveSettings();
-
         const { archiveSchedule } = userSettings;
-        if (!archiveSchedule.start || !archiveSchedule.interval) {
-            console.log("Archive schedule not configured. Skipping cycle.");
-            return;
-        }
-
+        if (!archiveSchedule.start || !archiveSchedule.interval) return;
         let startDate = new Date(archiveSchedule.start + "T00:00:00");
         let endDate = calculateEndDate(startDate, archiveSchedule.interval);
         const today = new Date();
@@ -1701,31 +1804,26 @@
             const cycleStartDate = new Date(startDate);
             const cycleEndDate = new Date(endDate);
             showAlert('Archive cycle running...', 'Processing');
+            showLoader();
             const endTimestamp = Timestamp.fromDate(new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000) - 1));
             const q = query(collection(db, "pm_tasks"), where("timestamp", ">=", Timestamp.fromDate(cycleStartDate)), where("timestamp", "<=", endTimestamp));
-
             try {
                 const snapshot = await getDocs(q);
-                const tasksToDelete = snapshot.docs;
-
-                if (tasksToDelete.length > 0) {
+                if (snapshot.size > 0) {
                     const batch = writeBatch(db);
-                    tasksToDelete.forEach(doc => {
-                        batch.delete(doc.ref);
-                    });
+                    snapshot.forEach(doc => batch.delete(doc.ref));
                     await batch.commit();
                 }
-
                 const newStartDate = new Date(cycleEndDate.getTime() + (24 * 60 * 60 * 1000));
                 userSettings.archiveSchedule.start = newStartDate.toISOString().split('T')[0];
                 await saveSettings();
-
                 updateArchiveScheduleDisplay();
-                showAlert(`Archive cycle complete. ${tasksToDelete.length} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted. The new cycle has been set.`, 'Success');
-
+                showAlert(`Archive cycle complete. ${snapshot.size} records from ${cycleStartDate.toLocaleDateString()} to ${cycleEndDate.toLocaleDateString()} were deleted.`, 'Success');
             } catch (error) {
                 console.error("Error during archive cycle: ", error);
                 showAlert("Failed to complete archive cycle.", "Error");
+            } finally {
+                hideLoader();
             }
         } else if (forceRun) {
             showAlert(`The current archive period has not ended yet. The cycle will run after ${endDate.toLocaleDateString()}.`, 'Info');
@@ -1734,8 +1832,19 @@
 
     // --- INITIALIZATION ---
     window.onload = async () => {
+        if ('serviceWorker' in navigator) {
+            try {
+                const registration = await navigator.serviceWorker.register('./service-worker.js');
+                console.log('Service Worker registered with scope:', registration.scope);
+            } catch (error) {
+                console.error('Service Worker registration failed:', error);
+            }
+        }
         loadEquipmentData();
         await loadSettings();
+        if (document.getElementById('admin-interface')) {
+             setupAdminFilters();
+        }
         console.log("Application initialized successfully.");
     };
     </script>
