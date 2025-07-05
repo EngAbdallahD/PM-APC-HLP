@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APC Preventive Maintenance</title>
-    <!-- PWA Manifest Link -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ffffff">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -45,7 +44,6 @@
 </head>
 <body class="bg-gray-100">
 
-    <!-- Loading Spinner Overlay -->
     <div id="loader-overlay" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-[100]">
         <div id="loader"></div>
     </div>
@@ -66,7 +64,11 @@
                 <div id="admin-login" class="hidden">
                     <h2 class="text-xl font-semibold text-gray-700 mb-2">Admin Login</h2>
                     <p class="text-md text-gray-500 mb-4">Eng. Osama Al-Samirat</p>
-                    <input type="password" id="admin-password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4">
+                    <input type="password" id="admin-password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg">
+                    <div class="flex items-center justify-start my-4">
+                        <input id="admin-remember-me" type="checkbox" class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
+                        <label for="admin-remember-me" class="ml-2 block text-sm text-gray-900">Remember me on this device</label>
+                    </div>
                     <button onclick="loginAdmin()" class="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-red-700 transition">Login</button>
                     <button onclick="showUserSelection()" class="mt-4 text-gray-600 hover:text-blue-600 font-medium">Back to User Selection</button>
                 </div>
@@ -75,16 +77,14 @@
         </div>
 
         <div id="user-password-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-11/12 max-w-sm text-center">
                 <h2 class="text-xl font-bold mb-4">Login as <span id="user-password-title" class="text-blue-600"></span></h2>
                 <input type="password" id="user-password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg mb-4">
                 
-                <!-- NEW: Remember Me Checkbox -->
                 <div class="flex items-center justify-start mb-4">
                     <input id="remember-me-checkbox" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                     <label for="remember-me-checkbox" class="ml-2 block text-sm text-gray-900">Remember me on this device</label>
                 </div>
-                <!-- END NEW -->
 
                 <div class="flex justify-center space-x-4">
                     <button onclick="closeUserPasswordModal()" class="bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-gray-600 transition">Cancel</button>
@@ -104,7 +104,7 @@
                     <button onclick="logout()" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition">Logout</button>
                 </div>
             </header>
-            <main class="flex-grow p-6 overflow-y-auto bg-gray-50">
+            <main class="flex-grow p-4 md:p-6 overflow-y-auto bg-gray-50">
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-gray-800 mb-4">Start New PM Task</h2>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -114,7 +114,6 @@
                     </div>
                 </div>
                 <div>
-                    <!-- MODIFIED: Added scroll buttons -->
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-2xl font-bold text-gray-800">Recent PM Activities</h2>
                         <div class="flex space-x-2">
@@ -126,119 +125,115 @@
                             </button>
                         </div>
                     </div>
-                    <!-- MODIFIED: Added container for scrolling -->
                     <div id="recent-activities-container" class="h-[32rem] overflow-y-auto">
                         <div id="recent-activities" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                            <!-- Cards will be inserted here -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </main>
              <footer class="bg-gray-200 text-center p-4">
-                <p class="text-sm text-gray-600">Design by: Eng.Abdallah Dmour</p>
+                 <p class="text-sm text-gray-600">Design by: Eng.Abdallah Dmour</p>
              </footer>
         </div>
 
         <div id="admin-interface" class="hidden h-full flex flex-col">
              <header class="bg-white shadow-md p-4 flex justify-between items-center">
-                <div class="flex items-center">
-                    <img src="arab_potash_logo.png" alt="Logo" class="h-12 mr-4">
-                    <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-                </div>
-                <div>
-                    <span class="font-semibold text-lg text-red-700 mr-4">ADMIN</span>
-                    <button onclick="logout()" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition">Logout</button>
-                </div>
-            </header>
-            <main class="flex-grow p-6 bg-gray-50 overflow-y-auto">
-                <!-- NEW: Admin Analytics Section -->
-                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Dashboard Analytics</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div class="bg-blue-100 p-4 rounded-lg shadow">
-                            <h3 class="font-bold text-3xl text-blue-800" id="analytics-total-today">0</h3>
-                            <p class="text-blue-600">Tasks Logged Today</p>
-                        </div>
-                        <div class="bg-green-100 p-4 rounded-lg shadow">
-                            <h3 class="font-bold text-3xl text-green-800" id="analytics-total-week">0</h3>
-                            <p class="text-green-600">Tasks This Week</p>
-                        </div>
-                        <div class="bg-red-100 p-4 rounded-lg shadow">
-                            <h3 class="font-bold text-3xl text-red-800" id="analytics-unresolved-errors">0</h3>
-                            <p class="text-red-600">Unresolved Errors</p>
-                        </div>
-                        <div class="bg-yellow-100 p-4 rounded-lg shadow">
-                            <h3 class="font-bold text-3xl text-yellow-800" id="analytics-users-active">0</h3>
-                            <p class="text-yellow-600">Users Active Today</p>
-                        </div>
-                    </div>
-                </div>
+                 <div class="flex items-center">
+                     <img src="arab_potash_logo.png" alt="Logo" class="h-12 mr-4">
+                     <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+                 </div>
+                 <div>
+                     <span class="font-semibold text-lg text-red-700 mr-4">ADMIN</span>
+                     <button onclick="logout()" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition">Logout</button>
+                 </div>
+             </header>
+             <main class="flex-grow p-4 md:p-6 bg-gray-50 overflow-y-auto">
+                  <div class="mb-6">
+                      <h2 class="text-2xl font-bold text-gray-800 mb-4">Dashboard Analytics</h2>
+                      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                          <div onclick="filterHistoryByAnalytics('today')" class="bg-blue-100 p-4 rounded-lg shadow cursor-pointer hover:scale-105 transition-transform duration-200">
+                              <h3 class="font-bold text-3xl text-blue-800" id="analytics-total-today">0</h3>
+                              <p class="text-blue-600">Tasks Logged Today</p>
+                          </div>
+                          <div onclick="filterHistoryByAnalytics('week')" class="bg-green-100 p-4 rounded-lg shadow cursor-pointer hover:scale-105 transition-transform duration-200">
+                              <h3 class="font-bold text-3xl text-green-800" id="analytics-total-week">0</h3>
+                              <p class="text-green-600">Tasks This Week</p>
+                          </div>
+                          <div onclick="filterHistoryByAnalytics('unresolved')" class="bg-red-100 p-4 rounded-lg shadow cursor-pointer hover:scale-105 transition-transform duration-200">
+                              <h3 class="font-bold text-3xl text-red-800" id="analytics-unresolved-errors">0</h3>
+                              <p class="text-red-600">Unresolved Errors</p>
+                          </div>
+                          <div onclick="filterHistoryByAnalytics('active_users')" class="bg-yellow-100 p-4 rounded-lg shadow cursor-pointer hover:scale-105 transition-transform duration-200">
+                              <h3 class="font-bold text-3xl text-yellow-800" id="analytics-users-active">0</h3>
+                              <p class="text-yellow-600">Users Active Today</p>
+                          </div>
+                      </div>
+                  </div>
 
-                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Live PM Activities</h2>
-                        <div id="admin-live-activities" class="space-y-4 h-96 overflow-y-auto">
-                            </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
-                        <div>
-                             <h2 class="text-2xl font-bold text-gray-800 mb-4">PM History & Reports</h2>
-                             <!-- NEW: Filter controls -->
-                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border">
-                                 <input type="text" id="history-search-text" placeholder="Search by User or TAG..." class="p-2 border rounded-lg w-full">
-                                 <input type="date" id="history-search-date" class="p-2 border rounded-lg w-full">
-                             </div>
-                             <div class="flex space-x-4 my-4">
-                                <button onclick="exportToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export All to Excel</button>
-                                <button onclick="exportToPDF()" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Export All to PDF</button>
-                            </div>
-                            <div id="admin-history" class="h-80 overflow-y-auto border rounded-lg p-2"></div>
-                        </div>
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div class="bg-white p-6 rounded-lg shadow-md">
+                          <h2 class="text-2xl font-bold text-gray-800 mb-4">Live PM Activities</h2>
+                          <div id="admin-live-activities" class="space-y-4 h-96 overflow-y-auto">
+                              </div>
+                      </div>
+                      <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
+                          <div>
+                               <h2 class="text-2xl font-bold text-gray-800 mb-4">PM History & Reports</h2>
+                               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border">
+                                    <input type="text" id="history-search-text" placeholder="Search by User or TAG..." class="p-2 border rounded-lg w-full">
+                                    <input type="date" id="history-search-date" class="p-2 border rounded-lg w-full">
+                               </div>
+                               <div class="flex space-x-4 my-4">
+                                   <button onclick="exportToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export All to Excel</button>
+                                   <button onclick="exportToPDF()" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Export All to PDF</button>
+                               </div>
+                              <div id="admin-history" class="h-80 overflow-y-auto border rounded-lg p-2"></div>
+                          </div>
 
-                        <div class="space-y-6 border-t pt-6">
-                            <div id="data-management" class="space-y-4 border p-4 rounded-lg">
-                                <h3 class="font-semibold text-lg text-gray-700">Automated Archiving Schedule</h3>
-                                <p class="text-sm text-gray-600">Set the schedule for automatically deleting old PM records. This cycle runs when the admin logs in.</p>
-                                 <div class="flex items-center space-x-4">
-                                    <label for="interval-duration" class="font-semibold">Interval:</label>
-                                    <select id="interval-duration" class="p-2 border rounded-lg">
-                                        <option value="daily">Daily</option>
-                                        <option value="weekly" selected>Weekly</option>
-                                        <option value="monthly">Monthly</option>
-                                    </select>
-                                </div>
-                                <div class="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label for="start-date" class="font-semibold">Cycle Start Date:</label>
-                                        <input type="date" id="start-date" class="w-full p-2 border rounded-lg">
-                                    </div>
-                                    <div class="bg-gray-100 p-2 rounded-lg text-center">
-                                        <p class="text-sm font-medium">Next cycle ends on: <strong id="end-date-display" class="text-blue-600"></strong></p>
-                                    </div>
-                                </div>
-                                 <div class="flex flex-wrap gap-4">
-                                    <button onclick="runCycleManually()" class="bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-700 transition">Run Archive Cycle Now</button>
-                                    <button onclick="confirmClearAllData()" class="bg-red-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-900 transition">Clear ALL History</button>
-                                </div>
-                            </div>
+                          <div class="space-y-6 border-t pt-6">
+                              <div id="data-management" class="space-y-4 border p-4 rounded-lg">
+                                  <h3 class="font-semibold text-lg text-gray-700">Automated Archiving Schedule</h3>
+                                  <p class="text-sm text-gray-600">Set the schedule for automatically deleting old PM records. This cycle runs when the admin logs in.</p>
+                                   <div class="flex items-center space-x-4">
+                                       <label for="interval-duration" class="font-semibold">Interval:</label>
+                                       <select id="interval-duration" class="p-2 border rounded-lg">
+                                           <option value="daily">Daily</option>
+                                           <option value="weekly" selected>Weekly</option>
+                                           <option value="monthly">Monthly</option>
+                                       </select>
+                                   </div>
+                                  <div class="grid grid-cols-1 gap-4">
+                                       <div>
+                                           <label for="start-date" class="font-semibold">Cycle Start Date:</label>
+                                           <input type="date" id="start-date" class="w-full p-2 border rounded-lg">
+                                       </div>
+                                       <div class="bg-gray-100 p-2 rounded-lg text-center">
+                                           <p class="text-sm font-medium">Next cycle ends on: <strong id="end-date-display" class="text-blue-600"></strong></p>
+                                       </div>
+                                  </div>
+                                   <div class="flex flex-wrap gap-4">
+                                       <button onclick="runCycleManually()" class="bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-700 transition">Run Archive Cycle Now</button>
+                                       <button onclick="confirmClearAllData()" class="bg-red-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-900 transition">Clear ALL History</button>
+                                   </div>
+                              </div>
 
-                             <div id="user-management" class="space-y-4 border p-4 rounded-lg">
-                                <h3 class="font-semibold text-lg text-gray-700">Manage Users</h3>
-                                <div id="user-editor-container" class="space-y-4">
-                                    </div>
-                                <button onclick="saveUsers()" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Save Users</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-             <footer class="bg-gray-200 text-center p-4">
-                <p class="text-sm text-gray-600">Design by: Eng.Abdallah Dmour</p>
-             </footer>
+                               <div id="user-management" class="space-y-4 border p-4 rounded-lg">
+                                   <h3 class="font-semibold text-lg text-gray-700">Manage Users</h3>
+                                   <div id="user-editor-container" class="space-y-4">
+                                       </div>
+                                   <button onclick="saveUsers()" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Save Users</button>
+                               </div>
+                          </div>
+                      </div>
+                  </div>
+             </main>
+              <footer class="bg-gray-200 text-center p-4">
+                  <p class="text-sm text-gray-600">Design by: Eng.Abdallah Dmour</p>
+              </footer>
         </div>
 
         <div id="equipment-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-3xl">
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-11/12 max-w-3xl">
                 <h2 class="text-2xl font-bold mb-4" id="equipment-modal-title">Select Equipment</h2>
                 <div class="mb-4">
                     <input type="text" id="tag-search" class="w-full p-3 border rounded-lg" placeholder="Search by TAG number...">
@@ -262,7 +257,7 @@
         </div>
         
         <div id="pm-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg">
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-11/12 max-w-lg">
                 <h2 class="text-2xl font-bold mb-2">PM Task for <span id="pm-tag-number" class="text-blue-600"></span></h2>
                 <p class="text-lg text-gray-600 mb-6" id="pm-equipment-description"></p>
 
@@ -318,7 +313,7 @@
         </div>
         
         <div id="alert-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-11/12 max-w-sm text-center">
                 <h2 id="alert-title" class="text-xl font-bold mb-4">Alert</h2>
                 <p id="alert-message" class="text-gray-700 mb-6"></p>
                 <button onclick="closeAlertModal()" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition">OK</button>
@@ -326,7 +321,7 @@
         </div>
 
         <div id="confirm-clear-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl w-11/12 max-w-sm text-center">
                 <h2 class="text-xl font-bold mb-4 text-red-600">Confirm Action</h2>
                 <p id="confirm-clear-message" class="text-gray-700 mb-6"></p>
                 <div class="flex justify-center space-x-4">
@@ -340,7 +335,7 @@
 
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc, setDoc, getDoc, updateDoc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc, setDoc, getDoc, updateDoc, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- FIREBASE CONFIG ---
     const firebaseConfig = {
@@ -367,13 +362,13 @@
     let unsubscribePmTasks = null;
     let unsubscribeUserSettings = null;
 
-    // Default user settings
+    // EDITED: Default user settings with unique colors
     const defaultUserSettings = {
         users: [
             { id: 'user1', name: 'Khaled', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700', allowedZones: ['HLP', 'SCREEN', 'COMPACTION'] },
-            { id: 'user2', name: 'Mohammed', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700', allowedZones: ['HLP'] },
-            { id: 'user3', name: 'Moatasem', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700', allowedZones: ['SCREEN', 'COMPACTION'] },
-            { id: 'user4', name: 'User 4', password: '0000', color: 'bg-green-600', hover: 'hover:bg-green-700', allowedZones: [] }
+            { id: 'user2', name: 'Mohammed', password: '0000', color: 'bg-teal-600', hover: 'hover:bg-teal-700', allowedZones: ['HLP'] },
+            { id: 'user3', name: 'Moatasem', password: '0000', color: 'bg-indigo-600', hover: 'hover:bg-indigo-700', allowedZones: ['SCREEN', 'COMPACTION'] },
+            { id: 'user4', name: 'User 4', password: '0000', color: 'bg-slate-600', hover: 'hover:bg-slate-700', allowedZones: [] }
         ],
         archiveSchedule: {
             start: null,
@@ -872,7 +867,7 @@
 14-54-400 (VFD),COOLER PRODUCT OUTLET ROTARY VALVE #400
 14-54-410,Rotary valves below cyclones hopper #410
 14-54-501,ROTARY AIR LOCK VALVE (BCYCLON)
-14-54-502,ROTARY AIR LOCK VALVE (NEW COOLER BAGFILTER) #502
+14-54-502,ROTARY AIR LOCK VALVE (NEW COOLer BAGFILTER) #502
 14-54-510,Rotary valves below cyclones hopper #510
 14-54-650,ROTARY VALVE (MO6)/ COMPACTION
 14-54-660,ROTARY VALVE  (MO4)/ WAREHOUSE
@@ -1181,31 +1176,27 @@
 
     // --- LOGIN/LOGOUT & UI FLOW ---
     window.showUserPasswordPrompt = (user) => {
-        // Check for saved credentials FIRST
         const savedCreds = getSavedUserCredentials(user.id);
         const latestUser = userSettings.users.find(u => u.id === user.id);
 
         if (savedCreds && latestUser && savedCreds.password === latestUser.password) {
-            // Password matches and is remembered, log in directly
             showLoader();
-            setTimeout(() => { // Use timeout to allow loader to show
+            setTimeout(() => {
                 showUserDashboard(latestUser.name);
                 hideLoader();
             }, 200);
-            return; // Skip showing the modal
+            return;
         }
         
-        // If admin changed password, savedCreds won't match. Clear the old one.
         if(savedCreds) {
              clearUserCredentials(user.id);
         }
 
-        // If no valid saved password, show the modal as usual
         userForLogin = user;
         document.getElementById('user-password-title').innerText = user.name;
         document.getElementById('user-password-modal').classList.remove('hidden');
         document.getElementById('user-password').focus();
-        document.getElementById('remember-me-checkbox').checked = false; // Reset checkbox state
+        document.getElementById('remember-me-checkbox').checked = false;
     };
 
     window.closeUserPasswordModal = () => {
@@ -1273,7 +1264,14 @@
     window.loginAdmin = async () => {
         showLoader();
         const password = document.getElementById('admin-password').value;
-        if (password === 'Karak@2025') { 
+        if (password === 'Karak@2025') {
+            const rememberMe = document.getElementById('admin-remember-me').checked;
+            if (rememberMe) {
+                localStorage.setItem('admin-remembered', 'true');
+            } else {
+                localStorage.removeItem('admin-remembered');
+            }
+            
             currentUser = 'Admin';
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('admin-interface').classList.remove('hidden');
@@ -1281,7 +1279,6 @@
             await checkAndRunArchiveCycle();
             listenForTasks();
             listenForUserSettingsChanges();
-            setupAdminFilters();
         } else {
             showAlert('Incorrect password.');
             document.getElementById('admin-password').value = '';
@@ -1294,6 +1291,9 @@
         userForLogin = null;
         if (unsubscribePmTasks) unsubscribePmTasks();
         if (unsubscribeUserSettings) unsubscribeUserSettings();
+        
+        localStorage.removeItem('admin-remembered');
+        
         document.getElementById('user-interface').classList.add('hidden');
         document.getElementById('admin-interface').classList.add('hidden');
         document.getElementById('login-screen').classList.remove('hidden');
@@ -1304,6 +1304,8 @@
     // --- ADMIN UI & AUTOMATED DATE LOGIC ---
     function initializeAdminUI() {
         renderUserEditor();
+        setupAdminFilters();
+
         const startDateInput = document.getElementById('start-date');
         const intervalSelect = document.getElementById('interval-duration');
         const { start, interval } = userSettings.archiveSchedule;
@@ -1353,7 +1355,9 @@
                 }) : defaultUserSettings.users;
                 userSettings.archiveSchedule = firebaseSettings.archiveSchedule || defaultUserSettings.archiveSchedule;
 
-                renderUserEditor();
+                if (currentUser === 'Admin') {
+                    renderUserEditor();
+                }
                 renderUserButtons();
                 updateArchiveScheduleDisplay();
                 if (currentUser && currentUser !== 'Admin') {
@@ -1461,7 +1465,7 @@
         searchInput.onkeyup = () => renderTable(searchInput.value);
         renderTable();
     }
-    
+
     // --- DATA HANDLING AND SUBMISSION ---
     window.submitPmTask = async () => {
         const task = {
@@ -1478,10 +1482,13 @@
             timestamp: serverTimestamp(),
             resolvedByAdmin: false
         };
+
         try {
             await addDoc(collection(db, "pm_tasks"), task);
-            showAlert('PM Task Saved Successfully!', 'Success');
             closePmModal();
+            showAlert('PM Task Saved Successfully! Select the next equipment.', 'Success');
+            selectZone(currentZone);
+
         } catch (error) {
             console.error("Error adding document: ", error);
             showAlert('Failed to save PM task.', 'Error');
@@ -1514,6 +1521,7 @@
     };
 
     function listenForTasks() {
+        if (unsubscribePmTasks) unsubscribePmTasks();
         const q = query(collection(db, "pm_tasks"), orderBy("timestamp", "desc"));
         unsubscribePmTasks = onSnapshot(q, (snapshot) => {
             allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1542,7 +1550,7 @@
         const container = document.getElementById('recent-activities');
         container.innerHTML = '';
         const userTasks = tasks.filter(task => task.user === currentUser);
-        userTasks.slice(0, 20).forEach(task => { // Increased number of tasks shown
+        userTasks.slice(0, 20).forEach(task => {
             const card = document.createElement('div');
             const borderClass = task.status === 'Error' && !task.resolvedByAdmin ? 'border-l-4 border-red-500' : 'border-l-4 border-blue-500';
             const statusIndicator = task.status === 'Error' && !task.resolvedByAdmin ? '<span class="text-red-600 font-bold ml-2">(Error - Unresolved)</span>' : '';
@@ -1584,51 +1592,54 @@
         });
     }
 
-    function displayAdminHistory(filterText = '', filterDate = '') {
+    function displayAdminHistory(filterText = '', filterDate = '', preFilteredTasks = null) {
         const container = document.getElementById('admin-history');
         if (!container) return;
 
-        let filteredTasks = allTasks;
-        if (filterText) {
-            const lowerFilterText = filterText.toLowerCase();
-            filteredTasks = filteredTasks.filter(task => 
-                task.user.toLowerCase().includes(lowerFilterText) || 
-                task.tag.toLowerCase().includes(lowerFilterText)
-            );
-        }
-        if (filterDate) {
-            filteredTasks = filteredTasks.filter(task => {
-                if (!task.timestamp) return false;
-                return task.timestamp.toDate().toISOString().split('T')[0] === filterDate;
-            });
+        let filteredTasks = preFilteredTasks !== null ? preFilteredTasks : allTasks;
+
+        if (preFilteredTasks === null) {
+            if (filterText) {
+                const lowerFilterText = filterText.toLowerCase();
+                filteredTasks = filteredTasks.filter(task =>
+                    task.user.toLowerCase().includes(lowerFilterText) ||
+                    task.tag.toLowerCase().includes(lowerFilterText)
+                );
+            }
+            if (filterDate) {
+                filteredTasks = filteredTasks.filter(task => {
+                    if (!task.timestamp) return false;
+                    return task.timestamp.toDate().toISOString().split('T')[0] === filterDate;
+                });
+            }
         }
 
         let tableHTML = `<table class="min-w-full divide-y divide-gray-200">
-                     <thead class="bg-gray-50"><tr>
-                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Done By</th>
-                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Zone</th>
-                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tag</th>
-                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Resolved</th>
-                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
-                           <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                     </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
+                         <thead class="bg-gray-50"><tr>
+                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Done By</th>
+                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Zone</th>
+                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tag</th>
+                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Resolved</th>
+                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
+                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                         </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
         filteredTasks.forEach(task => {
             const isErrorAndUnresolved = task.status === 'Error' && !task.resolvedByAdmin;
             const resolveButton = isErrorAndUnresolved
                 ? `<button onclick="markPmTaskAsResolved('${task.id}', '${task.status}')" class="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600 transition">Mark Resolved</button>`
                 : '';
             tableHTML += `<tr>
-                       <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
-                       <td class="px-2 py-2 whitespace-nowrap">${task.zone || 'N/A'}</td>
-                       <td class="px-2 py-2 whitespace-nowrap">${task.tag}</td>
-                       <td class="px-2 py-2 whitespace-nowrap max-w-xs truncate">${task.description}</td>
-                       <td class="px-2 py-2 whitespace-nowrap">${task.status || 'N/A'}</td>
-                       <td class="px-2 py-2 whitespace-nowrap">${task.resolvedByAdmin ? 'Yes' : 'No'}</td>
-                       <td class="px-2 py-2 whitespace-nowrap">${task.timestamp ? task.timestamp.toDate().toLocaleString() : ''}</td>
-                       <td class="px-2 py-2 whitespace-nowrap">${resolveButton}</td>
-                 </tr>`;
+                            <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
+                            <td class="px-2 py-2 whitespace-nowrap">${task.zone || 'N/A'}</td>
+                            <td class="px-2 py-2 whitespace-nowrap">${task.tag}</td>
+                            <td class="px-2 py-2 whitespace-nowrap max-w-xs truncate">${task.description}</td>
+                            <td class="px-2 py-2 whitespace-nowrap">${task.status || 'N/A'}</td>
+                            <td class="px-2 py-2 whitespace-nowrap">${task.resolvedByAdmin ? 'Yes' : 'No'}</td>
+                            <td class="px-2 py-2 whitespace-nowrap">${task.timestamp ? task.timestamp.toDate().toLocaleString() : ''}</td>
+                            <td class="px-2 py-2 whitespace-nowrap">${resolveButton}</td>
+                       </tr>`;
         });
         tableHTML += `</tbody></table>`;
         container.innerHTML = tableHTML;
@@ -1662,21 +1673,75 @@
         textFilter.addEventListener('keyup', applyFilters);
         dateFilter.addEventListener('change', applyFilters);
     }
+    
+    window.filterHistoryByAnalytics = (filterType) => {
+        const historyContainer = document.getElementById('admin-history');
+        const textFilter = document.getElementById('history-search-text');
+        const dateFilter = document.getElementById('history-search-date');
+
+        textFilter.value = '';
+        dateFilter.value = '';
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        let filteredTasks = [];
+        switch (filterType) {
+            case 'today':
+                filteredTasks = allTasks.filter(t => t.timestamp && t.timestamp.toDate() >= startOfToday);
+                break;
+            case 'week':
+                const startOfWeek = new Date(new Date().setDate(new Date().getDate() - new Date().getDay()));
+                startOfWeek.setHours(0, 0, 0, 0);
+                filteredTasks = allTasks.filter(t => t.timestamp && t.timestamp.toDate() >= startOfWeek);
+                break;
+            case 'unresolved':
+                filteredTasks = allTasks.filter(t => t.status === 'Error' && !t.resolvedByAdmin);
+                break;
+            case 'active_users':
+                filteredTasks = allTasks.filter(t => t.timestamp && t.timestamp.toDate() >= startOfToday);
+                break;
+        }
+
+        displayAdminHistory('', '', filteredTasks);
+        historyContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     function getTaskColorCode(task) {
-        const errors = [task.sound, task.vibration, task.heat, task.motor_umbrella, task.status]
-            .filter(v => v === 'Error').length;
-        if (errors >= 3) return { name: 'Red', text: 'Major Issues Detected' };
-        if (errors >= 2) return { name: 'Yellow', text: 'Minor Issues Detected' };
+        const checks = {
+            sound: task.sound === 'OK',
+            vibration: task.vibration === 'OK',
+            heat: task.heat === 'OK',
+            motor_umbrella: task.motor_umbrella === 'OK',
+            status: task.status === 'OK'
+        };
+
+        if (!checks.sound && !checks.vibration && !checks.heat) {
+            return { name: 'Black', text: 'Critical: Sound, Vibration, & Heat issues' };
+        }
+        if (!checks.heat) {
+            return { name: 'Red', text: 'Danger: Heat issue' };
+        }
+        if (!checks.sound || !checks.vibration) {
+            return { name: 'Orange', text: 'Warning: Sound/Vibration issue' };
+        }
+        if (!checks.status) {
+            return { name: 'Yellow', text: 'Attention: Status issue' };
+        }
+        if (!checks.motor_umbrella) {
+            return { name: 'Blue', text: 'Notice: Motor Umbrella issue' };
+        }
         return { name: 'Green', text: 'OK' };
     }
-
-    const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Note", "Timestamp", "Color code", "Resolved By Admin"];
 
     window.exportToExcel = () => {
         const tasksToExport = allTasks;
         if (tasksToExport.length === 0) return showAlert("No data to export.");
+        
+        const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Note", "Timestamp", "Color code"];
+        
         let csvContent = reportHeaders.join(",") + "\r\n";
+        
         tasksToExport.forEach(task => {
             const colorCode = getTaskColorCode(task);
             const row = [
@@ -1690,16 +1755,21 @@
                 task.motor_umbrella || 'N/A',
                 task.status || 'N/A',
                 `"${(task.note || '').replace(/"/g, '""')}"`,
-                task.timestamp ? `"${task.timestamp.toDate().toLocaleString()}"` : '',
+                task.timestamp ? `"${task.timestamp.toDate().toLocaleDateString('en-GB')}"` : '',
                 colorCode.name,
-                task.resolvedByAdmin ? 'Yes' : 'No'
             ].join(",");
             csvContent += row + "\r\n";
         });
-        csvContent += "\r\n\r\nColor Code Legend:\r\n";
-        csvContent += "Green,OK\r\n";
-        csvContent += "Yellow,Minor Issues Detected (2 Errors)\r\n";
-        csvContent += "Red,Major Issues Detected (3+ Errors)\r\n";
+
+        csvContent += "\r\n\r\n";
+        csvContent += "Color Code Legend\r\n";
+        csvContent += "Green,OK (All checks are normal)\r\n";
+        csvContent += "Blue,Notice: Motor Umbrella issue\r\n";
+        csvContent += "Yellow,Attention: Status issue\r\n";
+        csvContent += "Orange,Warning: Sound/Vibration issue\r\n";
+        csvContent += "Red,Danger: Heat issue\r\n";
+        csvContent += "Black,Critical: Sound, Vibration, & Heat issues\r\n";
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -1716,38 +1786,32 @@
         if (tasksToExport.length === 0) return showAlert("No data to export.");
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('landscape');
+
+        const reportHeaders = ["Done by", "Zone", "TAG", "Description", "Sound", "Vibration", "Heat", "Motor Umbrella", "Status", "Timestamp"];
+
         const body = tasksToExport.map(task => {
-            const colorCode = getTaskColorCode(task);
             return [
-                task.user, task.zone || 'N/A', task.tag, task.description,
-                task.sound || 'N/A', task.vibration || 'N/A', task.heat || 'N/A',
-                task.motor_umbrella || 'N/A', task.status || 'N/A', task.note || '',
-                task.timestamp ? task.timestamp.toDate().toLocaleString() : '',
-                colorCode.name,
-                task.resolvedByAdmin ? 'Yes' : 'No'
+                task.user,
+                task.zone || 'N/A',
+                task.tag,
+                task.description,
+                task.sound || 'N/A',
+                task.vibration || 'N/A',
+                task.heat || 'N/A',
+                task.motor_umbrella || 'N/A',
+                task.status || 'N/A',
+                task.timestamp ? task.timestamp.toDate().toLocaleDateString('en-GB') : '',
             ];
         });
+
         doc.autoTable({
             head: [reportHeaders],
             body: body,
             startY: 10,
-            styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
-            columnStyles: { 3: { cellWidth: 40 }, 9: { cellWidth: 30 }, 11: { halign: 'center' }, 12: { halign: 'center' } },
-            didDrawCell: function (data) {
-                if (data.column.dataKey === 11) {
-                    const colorName = data.cell.raw;
-                    if (colorName === 'Red') data.cell.styles.fillColor = '#ffcdd2';
-                    if (colorName === 'Yellow') data.cell.styles.fillColor = '#fff9c4';
-                    if (colorName === 'Green') data.cell.styles.fillColor = '#c8e6c9';
-                }
-            }
+            styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
+            columnStyles: { 3: { cellWidth: 50 }, 9: { cellWidth: 25 } },
         });
-        const finalY = doc.lastAutoTable.finalY || 20;
-        doc.setFontSize(10);
-        doc.text("Color Code Legend:", 14, finalY + 10);
-        doc.text("- Green: OK", 14, finalY + 15);
-        doc.text("- Yellow: Minor Issues Detected (2 Errors)", 14, finalY + 20);
-        doc.text("- Red: Major Issues Detected (3+ Errors)", 14, finalY + 25);
+
         doc.save(`pm_report_all_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
@@ -1796,7 +1860,7 @@
         const { archiveSchedule } = userSettings;
         if (!archiveSchedule.start || !archiveSchedule.interval) return;
         let startDate = new Date(archiveSchedule.start + "T00:00:00");
-        let endDate = calculateEndDate(startDate, archiveSchedule.interval);
+        let endDate = calculateEndDate(startDate, intervalSelect.value);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -1829,7 +1893,7 @@
             showAlert(`The current archive period has not ended yet. The cycle will run after ${endDate.toLocaleDateString()}.`, 'Info');
         }
     }
-
+    
     // --- INITIALIZATION ---
     window.onload = async () => {
         if ('serviceWorker' in navigator) {
@@ -1840,13 +1904,39 @@
                 console.error('Service Worker registration failed:', error);
             }
         }
+        
+        if (localStorage.getItem('admin-remembered') === 'true') {
+            showLoader();
+            currentUser = 'Admin';
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-interface').classList.remove('hidden');
+            await loadSettings();
+            initializeAdminUI();
+            await checkAndRunArchiveCycle();
+            listenForTasks();
+            listenForUserSettingsChanges();
+            hideLoader();
+            return;
+        }
+
         loadEquipmentData();
         await loadSettings();
-        if (document.getElementById('admin-interface')) {
-             setupAdminFilters();
-        }
         console.log("Application initialized successfully.");
     };
+
+    document.getElementById('user-password').addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            loginUserWithPassword();
+        }
+    });
+
+    document.getElementById('admin-password').addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            loginAdmin();
+        }
+    });
     </script>
 </body>
 </html>
