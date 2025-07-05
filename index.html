@@ -106,11 +106,22 @@
             </header>
             <main class="flex-grow p-4 md:p-6 overflow-y-auto bg-gray-50">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Start New PM Task</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <button onclick="selectZone('HLP')" class="bg-yellow-500 text-white font-bold py-8 rounded-lg shadow-lg hover:bg-yellow-600 transition-transform transform hover:scale-105 text-2xl">HLP</button>
-                        <button onclick="selectZone('SCREEN')" class="bg-teal-500 text-white font-bold py-8 rounded-lg shadow-lg hover:bg-teal-600 transition-transform transform hover:scale-105 text-2xl">SCREEN</button>
-                        <button onclick="selectZone('COMPACTION')" class="bg-indigo-500 text-white font-bold py-8 rounded-lg shadow-lg hover:bg-indigo-600 transition-transform transform hover:scale-105 text-2xl">COMPACTION</button>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Select a Task</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="font-bold text-xl mb-4">Preventive Maintenance (PM)</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <button onclick="selectZone('HLP')" class="bg-yellow-500 text-white font-bold py-6 rounded-lg shadow-lg hover:bg-yellow-600 transition-transform transform hover:scale-105 text-xl">HLP</button>
+                                <button onclick="selectZone('SCREEN')" class="bg-teal-500 text-white font-bold py-6 rounded-lg shadow-lg hover:bg-teal-600 transition-transform transform hover:scale-105 text-xl">SCREEN</button>
+                                <button onclick="selectZone('COMPACTION')" class="bg-indigo-500 text-white font-bold py-6 rounded-lg shadow-lg hover:bg-indigo-600 transition-transform transform hover:scale-105 text-xl">COMPACTION</button>
+                            </div>
+                        </div>
+                        <div id="grease-task-card" class="bg-white p-6 rounded-lg shadow-md flex flex-col">
+                            <h3 class="font-bold text-xl mb-4">Motor Greasing</h3>
+                            <button onclick="showGreaseSearch()" class="bg-green-600 text-white font-bold py-6 rounded-lg shadow-lg hover:bg-green-700 transition-transform transform hover:scale-105 text-xl h-full">Log Motor Grease</button>
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -177,19 +188,43 @@
                               </div>
                       </div>
                       <div class="bg-white p-6 rounded-lg shadow-md space-y-6">
-                          <div>
-                               <h2 class="text-2xl font-bold text-gray-800 mb-4">PM History & Reports</h2>
-                               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border">
-                                    <input type="text" id="history-search-text" placeholder="Search by User or TAG..." class="p-2 border rounded-lg w-full">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">History & Reports</h2>
+                            <div class="border-b border-gray-200">
+                                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                    <button onclick="switchAdminView('pm')" id="tab-pm" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-500 text-indigo-600">
+                                        PM History
+                                    </button>
+                                    <button onclick="switchAdminView('grease')" id="tab-grease" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                        Grease History
+                                    </button>
+                                </nav>
+                            </div>
+    
+                            <div id="pm-view">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4 p-4 bg-gray-50 rounded-lg border">
+                                    <input type="text" id="history-search-text" placeholder="Search PM by User or TAG..." class="p-2 border rounded-lg w-full">
                                     <input type="date" id="history-search-date" class="p-2 border rounded-lg w-full">
-                               </div>
-                               <div class="flex space-x-4 my-4">
-                                   <button onclick="exportToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export All to Excel</button>
-                                   <button onclick="exportToPDF()" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Export All to PDF</button>
-                               </div>
-                              <div id="admin-history" class="h-80 overflow-y-auto border rounded-lg p-2"></div>
-                          </div>
-
+                                </div>
+                                <div class="flex space-x-4 my-4">
+                                    <button onclick="exportToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export PM to Excel</button>
+                                    <button onclick="exportToPDF()" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition">Export PM to PDF</button>
+                                </div>
+                                <div id="admin-history" class="h-80 overflow-y-auto border rounded-lg p-2"></div>
+                            </div>
+    
+                            <div id="grease-view" class="hidden">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4 p-4 bg-gray-50 rounded-lg border">
+                                    <input type="text" id="grease-search-text" placeholder="Search Grease by User or TAG..." class="p-2 border rounded-lg w-full">
+                                    <input type="date" id="grease-search-date" class="p-2 border rounded-lg w-full">
+                                </div>
+                                <div class="flex space-x-4 my-4">
+                                    <button onclick="exportGreaseToExcel()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Export Grease to Excel</button>
+                                </div>
+                                <div id="admin-grease-history" class="h-80 overflow-y-auto border rounded-lg p-2"></div>
+                            </div>
+                        </div>
+                        
                           <div class="space-y-6 border-t pt-6">
                               <div id="data-management" class="space-y-4 border p-4 rounded-lg">
                                   <h3 class="font-semibold text-lg text-gray-700">Automated Archiving Schedule</h3>
@@ -333,6 +368,81 @@
 
     </div>
 
+    <div id="grease-search-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-11/12 max-w-3xl">
+            <h2 class="text-2xl font-bold mb-4">Search for Motor TAG</h2>
+            <div class="mb-4">
+                <input type="text" id="grease-tag-search" class="w-full p-3 border rounded-lg" placeholder="Search any TAG number...">
+            </div>
+            <div class="h-64 overflow-y-auto border rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TAG Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipment Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grease-search-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                </table>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="document.getElementById('grease-search-modal').classList.add('hidden')" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="grease-task-modal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-start justify-center overflow-y-auto py-12 z-50">
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-11/12 max-w-lg">
+            <h2 class="text-2xl font-bold mb-2">Motor Grease for <span id="grease-tag-number" class="text-blue-600"></span></h2>
+            <p class="text-lg text-gray-600 mb-6" id="grease-equipment-description"></p>
+            
+            <div class="space-y-6">
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <input id="front-bearing-available" type="checkbox" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="front-bearing-available" class="ml-3 block font-semibold text-lg text-gray-900">Front Bearing Available?</label>
+                    </div>
+                    <div id="front-bearing-condition-block" class="hidden mt-4 pl-8">
+                        <label class="font-semibold text-md">Condition:</label>
+                        <div class="mt-2">
+                            <input type="radio" name="front-bearing-condition" value="OK" class="form-radio h-5 w-5 text-green-600"><span class="ml-2 mr-4">OK</span>
+                            <input type="radio" name="front-bearing-condition" value="Error" class="form-radio h-5 w-5 text-red-600"><span class="ml-2">Error</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <input id="rear-bearing-available" type="checkbox" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="rear-bearing-available" class="ml-3 block font-semibold text-lg text-gray-900">Rear Bearing Available?</label>
+                    </div>
+                    <div id="rear-bearing-condition-block" class="hidden mt-4 pl-8">
+                        <label class="font-semibold text-md">Condition:</label>
+                        <div class="mt-2">
+                            <input type="radio" name="rear-bearing-condition" value="OK" class="form-radio h-5 w-5 text-green-600"><span class="ml-2 mr-4">OK</span>
+                            <input type="radio" name="rear-bearing-condition" value="Error" class="form-radio h-5 w-5 text-red-600"><span class="ml-2">Error</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="grease-amount" class="font-semibold text-lg">Total Grease Amount (grams)</label>
+                    <input type="number" id="grease-amount" class="w-full mt-2 p-3 border rounded-lg" placeholder="e.g., 50">
+                </div>
+
+                <div>
+                    <label for="grease-note" class="font-semibold text-lg">Note</label>
+                    <textarea id="grease-note" class="w-full mt-2 p-3 border rounded-lg h-24" placeholder="Add extra information here..."></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button onclick="closeGreaseTaskModal()" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition">Cancel</button>
+                <button onclick="submitGreaseTask()" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Greasing Finished</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, Timestamp, writeBatch, doc, setDoc, getDoc, updateDoc, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -359,15 +469,16 @@
     let selectedEquipment = null;
     let equipmentData = { HLP: [], SCREEN: [], COMPACTION: [] };
     let allTasks = [];
+    let allGreaseTasks = [];
     let unsubscribePmTasks = null;
     let unsubscribeUserSettings = null;
 
-    // EDITED: Default user settings with unique colors
+    // EDITED: Default user settings with unique colors and new permission
     const defaultUserSettings = {
         users: [
-            { id: 'user1', name: 'Khaled', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700', allowedZones: ['HLP', 'SCREEN', 'COMPACTION'] },
-            { id: 'user2', name: 'Mohammed', password: '0000', color: 'bg-teal-600', hover: 'hover:bg-teal-700', allowedZones: ['HLP'] },
-            { id: 'user3', name: 'Moatasem', password: '0000', color: 'bg-indigo-600', hover: 'hover:bg-indigo-700', allowedZones: ['SCREEN', 'COMPACTION'] },
+            { id: 'user1', name: 'Khaled', password: '0000', color: 'bg-blue-600', hover: 'hover:bg-blue-700', allowedZones: ['HLP', 'SCREEN', 'COMPACTION', 'Motor Grease'] },
+            { id: 'user2', name: 'Mohammed', password: '0000', color: 'bg-teal-600', hover: 'hover:bg-teal-700', allowedZones: ['HLP', 'Motor Grease'] },
+            { id: 'user3', name: 'Moatasem', password: '0000', color: 'bg-indigo-600', hover: 'hover:bg-indigo-700', allowedZones: ['SCREEN', 'COMPACTION', 'Motor Grease'] },
             { id: 'user4', name: 'User 4', password: '0000', color: 'bg-slate-600', hover: 'hover:bg-slate-700', allowedZones: [] }
         ],
         archiveSchedule: {
@@ -1141,7 +1252,7 @@
         const container = document.getElementById('user-editor-container');
         if(!container) return;
         container.innerHTML = '';
-        const allZones = ['HLP', 'SCREEN', 'COMPACTION'];
+        const allZones = ['HLP', 'SCREEN', 'COMPACTION', 'Motor Grease'];
         userSettings.users.forEach((user, index) => {
             const div = document.createElement('div');
             div.className = 'p-3 border rounded-lg bg-gray-50';
@@ -1239,13 +1350,20 @@
         const loggedInUser = userSettings.users.find(u => u.name === currentUser);
         const userAllowedZones = loggedInUser ? loggedInUser.allowedZones : [];
 
+        // --- PM Zone Buttons ---
         const hlpButton = document.querySelector('button[onclick="selectZone(\'HLP\')"]');
         const screenButton = document.querySelector('button[onclick="selectZone(\'SCREEN\')"]');
         const compactionButton = document.querySelector('button[onclick="selectZone(\'COMPACTION\')"]');
 
-        if (hlpButton) hlpButton.classList.toggle('hidden', !userAllowedZones.includes('HLP'));
-        if (screenButton) screenButton.classList.toggle('hidden', !userAllowedZones.includes('SCREEN'));
-        if (compactionButton) compactionButton.classList.toggle('hidden', !userAllowedZones.includes('COMPACTION'));
+        if (hlpButton) hlpButton.style.display = userAllowedZones.includes('HLP') ? '' : 'none';
+        if (screenButton) screenButton.style.display = userAllowedZones.includes('SCREEN') ? '' : 'none';
+        if (compactionButton) compactionButton.style.display = userAllowedZones.includes('COMPACTION') ? '' : 'none';
+        
+        // --- Motor Grease Card ---
+        const greaseTaskCard = document.getElementById('grease-task-card');
+        if (greaseTaskCard) {
+            greaseTaskCard.style.display = userAllowedZones.includes('Motor Grease') ? 'flex' : 'none';
+        }
 
         listenForTasks();
     }
@@ -1279,6 +1397,7 @@
             await checkAndRunArchiveCycle();
             listenForTasks();
             listenForUserSettingsChanges();
+            listenForGreaseTasks();
         } else {
             showAlert('Incorrect password.');
             document.getElementById('admin-password').value = '';
@@ -1465,6 +1584,89 @@
         searchInput.onkeyup = () => renderTable(searchInput.value);
         renderTable();
     }
+    
+    // --- NEW FUNCTIONS FOR MOTOR GREASING TASK ---
+
+    let selectedGreaseEquipment = null;
+
+    function populateGreaseSearchTable(equipmentList) {
+        const tableBody = document.getElementById('grease-search-table-body');
+        const searchInput = document.getElementById('grease-tag-search');
+        
+        const renderTable = (filter = '') => {
+            tableBody.innerHTML = '';
+            const filteredData = equipmentList.filter(eq =>
+                eq.tag.toLowerCase().includes(filter.toLowerCase()) ||
+                eq.description.toLowerCase().includes(filter.toLowerCase())
+            );
+            filteredData.forEach(({ tag, description }) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="#" onclick="event.preventDefault(); selectGreaseEquipment('${tag}', \`${description.replace(/'/g, "\\'")}\`)" class="text-blue-600 hover:text-blue-800 hover:underline font-semibold">${tag}</a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${description}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        searchInput.onkeyup = () => renderTable(searchInput.value);
+        renderTable();
+    }
+
+    window.showGreaseSearch = () => {
+        const allEquipment = [...equipmentData.HLP, ...equipmentData.SCREEN, ...equipmentData.COMPACTION];
+        populateGreaseSearchTable(allEquipment);
+        document.getElementById('grease-search-modal').classList.remove('hidden');
+        document.getElementById('grease-tag-search').focus();
+    };
+
+    window.selectGreaseEquipment = (tag, description) => {
+        selectedGreaseEquipment = { tag, description };
+        document.getElementById('grease-tag-number').innerText = tag;
+        document.getElementById('grease-equipment-description').innerText = description;
+        document.getElementById('grease-search-modal').classList.add('hidden');
+        document.getElementById('grease-task-modal').classList.remove('hidden');
+    };
+
+    window.closeGreaseTaskModal = () => {
+        document.getElementById('grease-task-modal').classList.add('hidden');
+        // Reset form
+        document.getElementById('front-bearing-available').checked = false;
+        document.getElementById('rear-bearing-available').checked = false;
+        document.getElementById('front-bearing-condition-block').classList.add('hidden');
+        document.getElementById('rear-bearing-condition-block').classList.add('hidden');
+        document.getElementById('grease-amount').value = '';
+        document.getElementById('grease-note').value = '';
+        selectedGreaseEquipment = null;
+    };
+
+    window.submitGreaseTask = async () => {
+        const frontBearingAvailable = document.getElementById('front-bearing-available').checked;
+        const rearBearingAvailable = document.getElementById('rear-bearing-available').checked;
+
+        const taskData = {
+            user: currentUser,
+            tag: selectedGreaseEquipment.tag,
+            description: selectedGreaseEquipment.description,
+            frontBearingAvailable: frontBearingAvailable,
+            frontBearingCondition: frontBearingAvailable ? (document.querySelector('input[name="front-bearing-condition"]:checked')?.value || 'N/A') : 'Not Available',
+            rearBearingAvailable: rearBearingAvailable,
+            rearBearingCondition: rearBearingAvailable ? (document.querySelector('input[name="rear-bearing-condition"]:checked')?.value || 'N/A') : 'Not Available',
+            greaseAmount: document.getElementById('grease-amount').value,
+            note: document.getElementById('grease-note').value,
+            timestamp: serverTimestamp(),
+        };
+
+        try {
+            await addDoc(collection(db, "grease_tasks"), taskData);
+            showAlert('Greasing Task Saved Successfully!', 'Success');
+            closeGreaseTaskModal();
+        } catch (error) {
+            console.error("Error adding greasing task: ", error);
+            showAlert('Failed to save greasing task.', 'Error');
+        }
+    };
 
     // --- DATA HANDLING AND SUBMISSION ---
     window.submitPmTask = async () => {
@@ -1682,13 +1884,10 @@
         textFilter.value = '';
         dateFilter.value = '';
 
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
         let filteredTasks = [];
         switch (filterType) {
             case 'today':
-                filteredTasks = allTasks.filter(t => t.timestamp && t.timestamp.toDate() >= startOfToday);
+                filteredTasks = allTasks.filter(t => t.timestamp && t.timestamp.toDate() >= new Date().setHours(0, 0, 0, 0));
                 break;
             case 'week':
                 const startOfWeek = new Date(new Date().setDate(new Date().getDate() - new Date().getDay()));
@@ -1699,7 +1898,7 @@
                 filteredTasks = allTasks.filter(t => t.status === 'Error' && !t.resolvedByAdmin);
                 break;
             case 'active_users':
-                filteredTasks = allTasks.filter(t => t.timestamp && t.timestamp.toDate() >= startOfToday);
+                filteredTasks = allTasks.filter(t => t.timestamp && t.timestamp.toDate() >= new Date().setHours(0, 0, 0, 0));
                 break;
         }
 
@@ -1853,7 +2052,6 @@
         await checkAndRunArchiveCycle(true);
     }
 
-    // EDITED: This function is now fixed.
     async function checkAndRunArchiveCycle(forceRun = false) {
         userSettings.archiveSchedule.start = document.getElementById('start-date').value;
         userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
@@ -1895,6 +2093,108 @@
         }
     }
     
+    // --- NEW FUNCTIONS FOR ADMIN GREASE VIEW ---
+    function listenForGreaseTasks() {
+        const q = query(collection(db, "grease_tasks"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snapshot) => {
+            allGreaseTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            displayAdminGreaseHistory(); // Call the display function when data changes
+        }, (error) => {
+            console.error("Firebase snapshot error for grease tasks: ", error);
+        });
+    }
+
+    function displayAdminGreaseHistory() {
+        const container = document.getElementById('admin-grease-history');
+        if (!container) return;
+
+        const textFilter = document.getElementById('grease-search-text').value.toLowerCase();
+        const dateFilter = document.getElementById('grease-search-date').value;
+
+        let filteredTasks = allGreaseTasks.filter(task => {
+            const matchesText = !textFilter || task.user.toLowerCase().includes(textFilter) || task.tag.toLowerCase().includes(textFilter);
+            const matchesDate = !dateFilter || (task.timestamp && task.timestamp.toDate().toISOString().split('T')[0] === dateFilter);
+            return matchesText && matchesDate;
+        });
+
+        let tableHTML = `<table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50"><tr>
+                <th class="px-2 py-2 text-left font-medium text-gray-500 uppercase">User</th>
+                <th class="px-2 py-2 text-left font-medium text-gray-500 uppercase">TAG</th>
+                <th class="px-2 py-2 text-left font-medium text-gray-500 uppercase">Front Bearing</th>
+                <th class="px-2 py-2 text-left font-medium text-gray-500 uppercase">Rear Bearing</th>
+                <th class="px-2 py-2 text-left font-medium text-gray-500 uppercase">Grease (g)</th>
+                <th class="px-2 py-2 text-left font-medium text-gray-500 uppercase">Note</th>
+                <th class="px-2 py-2 text-left font-medium text-gray-500 uppercase">Timestamp</th>
+            </tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
+        
+        filteredTasks.forEach(task => {
+            tableHTML += `<tr>
+                <td class="px-2 py-2 whitespace-nowrap">${task.user}</td>
+                <td class="px-2 py-2 whitespace-nowrap">${task.tag}</td>
+                <td class="px-2 py-2 whitespace-nowrap">${task.frontBearingCondition}</td>
+                <td class="px-2 py-2 whitespace-nowrap">${task.rearBearingCondition}</td>
+                <td class="px-2 py-2 whitespace-nowrap">${task.greaseAmount}</td>
+                <td class="px-2 py-2 whitespace-nowrap max-w-xs truncate">${task.note || 'N/A'}</td>
+                <td class="px-2 py-2 whitespace-nowrap">${task.timestamp ? task.timestamp.toDate().toLocaleString() : ''}</td>
+            </tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        container.innerHTML = tableHTML;
+    }
+
+    window.exportGreaseToExcel = () => {
+        if (allGreaseTasks.length === 0) return showAlert("No greasing data to export.");
+
+        const headers = ["User", "TAG", "Description", "Front Bearing Available", "Front Bearing Condition", "Rear Bearing Available", "Rear Bearing Condition", "Grease Amount (g)", "Note", "Timestamp"];
+        const customHeader = "Arab Potash Company,,,,Weekly Motor Grease,,,,Hot Leach Plant\r\n\r\n";
+        let csvContent = customHeader + headers.join(",") + "\r\n";
+        
+        allGreaseTasks.forEach(task => {
+            const row = [
+                task.user,
+                task.tag,
+                `"${(task.description || '').replace(/"/g, '""')}"`,
+                task.frontBearingAvailable,
+                task.frontBearingCondition,
+                task.rearBearingAvailable,
+                task.rearBearingCondition,
+                task.greaseAmount,
+                `"${(task.note || '').replace(/"/g, '""')}"`,
+                task.timestamp ? `"${task.timestamp.toDate().toLocaleDateString('en-GB')}"` : ''
+            ].join(",");
+            csvContent += row + "\r\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `grease_report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    window.switchAdminView = (view) => {
+        const pmView = document.getElementById('pm-view');
+        const greaseView = document.getElementById('grease-view');
+        const tabPm = document.getElementById('tab-pm');
+        const tabGrease = document.getElementById('tab-grease');
+
+        if (view === 'pm') {
+            pmView.classList.remove('hidden');
+            greaseView.classList.add('hidden');
+            tabPm.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-500 text-indigo-600';
+            tabGrease.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+        } else {
+            pmView.classList.add('hidden');
+            greaseView.classList.remove('hidden');
+            tabGrease.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-indigo-500 text-indigo-600';
+            tabPm.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+        }
+    };
+    
     // --- INITIALIZATION ---
     window.onload = async () => {
         if ('serviceWorker' in navigator) {
@@ -1916,6 +2216,7 @@
             await checkAndRunArchiveCycle();
             listenForTasks();
             listenForUserSettingsChanges();
+            listenForGreaseTasks();
             hideLoader();
             return;
         }
@@ -1937,6 +2238,17 @@
             event.preventDefault();
             loginAdmin();
         }
+    });
+
+    document.getElementById('grease-search-text').addEventListener('keyup', displayAdminGreaseHistory);
+    document.getElementById('grease-search-date').addEventListener('change', displayAdminGreaseHistory);
+    
+    document.getElementById('front-bearing-available').addEventListener('change', (e) => {
+        document.getElementById('front-bearing-condition-block').classList.toggle('hidden', !e.target.checked);
+    });
+
+    document.getElementById('rear-bearing-available').addEventListener('change', (e) => {
+        document.getElementById('rear-bearing-condition-block').classList.toggle('hidden', !e.target.checked);
     });
     </script>
 </body>
