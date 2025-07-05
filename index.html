@@ -867,7 +867,7 @@
 14-54-400 (VFD),COOLER PRODUCT OUTLET ROTARY VALVE #400
 14-54-410,Rotary valves below cyclones hopper #410
 14-54-501,ROTARY AIR LOCK VALVE (BCYCLON)
-14-54-502,ROTARY AIR LOCK VALVE (NEW COOLer BAGFILTER) #502
+14-54-502,ROTARY AIR LOCK VALVE (NEW COOLER BAGFILTER) #502
 14-54-510,Rotary valves below cyclones hopper #510
 14-54-650,ROTARY VALVE (MO6)/ COMPACTION
 14-54-660,ROTARY VALVE  (MO4)/ WAREHOUSE
@@ -1853,6 +1853,7 @@
         await checkAndRunArchiveCycle(true);
     }
 
+    // EDITED: This function is now fixed.
     async function checkAndRunArchiveCycle(forceRun = false) {
         userSettings.archiveSchedule.start = document.getElementById('start-date').value;
         userSettings.archiveSchedule.interval = document.getElementById('interval-duration').value;
@@ -1860,7 +1861,7 @@
         const { archiveSchedule } = userSettings;
         if (!archiveSchedule.start || !archiveSchedule.interval) return;
         let startDate = new Date(archiveSchedule.start + "T00:00:00");
-        let endDate = calculateEndDate(startDate, intervalSelect.value);
+        let endDate = calculateEndDate(startDate, archiveSchedule.interval);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
