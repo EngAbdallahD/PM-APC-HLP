@@ -2018,35 +2018,64 @@
     window.closeConfirmClearModal = () => document.getElementById('confirm-clear-modal').classList.add('hidden');
 
     window.confirmClearAllData = () => {
-        document.getElementById('confirm-clear-message').innerHTML = `Are you sure you want to delete <strong class="text-red-700">ALL PM history data</strong>? This action cannot be undone.`;
-        const yesButton = document.getElementById('confirm-clear-button-yes');
-        yesButton.onclick = clearAllDataConfirmed;
-        yesButton.innerText = "Yes, Delete All";
-        document.getElementById('confirm-clear-modal').classList.remove('hidden');
-    };
+    const pmView = document.getElementById('pm-view');
+    const activeView = pmView.classList.contains('hidden') ? 'grease' : 'pm';
+    
+    let message = '';
+    if (activeView === 'pm') {
+        message = `Are you sure you want to delete <strong class="text-red-700">ALL PM history data</strong>? This action cannot be undone.`;
+    } else {
+        message = `Are you sure you want to delete <strong class="text-red-700">ALL Motor Grease history data</strong>? This action cannot be undone.`;
+    }
 
-    async function clearAllDataConfirmed() {
-        closeConfirmClearModal();
-        showLoader();
-        try {
-            const snapshot = await getDocs(collection(db, "pm_tasks"));
-            if (snapshot.empty) {
-                showAlert("No data to delete.", "Info");
-                return;
-            }
-            const batch = writeBatch(db);
-            snapshot.forEach(docRef => {
-                batch.delete(docRef.ref);
-            });
-            await batch.commit();
-            showAlert(`Successfully deleted ${snapshot.size} PM records.`, "Success");
-        } catch (error) {
-            console.error("Error deleting all documents: ", error);
-            showAlert("Failed to delete all data.", "Error");
-        } finally {
+    document.getElementById('confirm-clear-message').innerHTML = message;
+    const yesButton = document.getElementById('confirm-clear-button-yes');
+    yesButton.onclick = () => clearAllDataConfirmed(activeView); // Pass the active view to the confirmation function
+    yesButton.innerText = "Yes, Delete All";
+    document.getElementById('confirm-clear-modal').classList.remove('hidden');
+};
+
+
+    async function clearAllDataConfirmed(dataType) {
+    closeConfirmClearModal();
+    showLoader();
+
+    let collectionName = '';
+    let recordTypeName = '';
+
+    if (dataType === 'pm') {
+        collectionName = 'pm_tasks';
+        recordTypeName = 'PM';
+    } else if (dataType === 'grease') {
+        collectionName = 'grease_tasks';
+        recordTypeName = 'Motor Grease';
+    } else {
+        showAlert('Unknown data type to delete.', 'Error');
+        hideLoader();
+        return;
+    }
+
+    try {
+        const snapshot = await getDocs(collection(db, collectionName));
+        if (snapshot.empty) {
+            showAlert(`No ${recordTypeName} data to delete.`, "Info");
             hideLoader();
+            return;
         }
-    };
+        const batch = writeBatch(db);
+        snapshot.forEach(docRef => {
+            batch.delete(docRef.ref);
+        });
+        await batch.commit();
+        showAlert(`Successfully deleted ${snapshot.size} ${recordTypeName} records.`, "Success");
+    } catch (error) {
+        console.error(`Error deleting all ${recordTypeName} documents: `, error);
+        showAlert(`Failed to delete all ${recordTypeName} data.`, "Error");
+    } finally {
+        hideLoader();
+    }
+};
+
 
     window.runCycleManually = async () => {
         await checkAndRunArchiveCycle(true);
